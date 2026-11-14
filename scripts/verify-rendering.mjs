@@ -210,6 +210,9 @@ function compareSegments(capture, observed) {
     if (segment.langAttribute && found.lang !== segment.langAttribute) {
       problems.push(segment.sourceSelector + ": lang " + found.lang + " != " + segment.langAttribute);
     }
+    if (capture.displayStyle && found.style !== capture.displayStyle) {
+      problems.push(segment.sourceSelector + ": style " + found.style + " != " + capture.displayStyle);
+    }
     if (!found.associated) problems.push(segment.sourceSelector + ": translation is not associated with its source");
     if (!found.hasText) problems.push(segment.sourceSelector + ": translation is empty");
   }
@@ -231,6 +234,7 @@ async function observe(page, mode) {
         relation: displayMode === "above" ? "siblingBefore" : "siblingAfter",
         containerTag: candidate.tagName.toLowerCase(),
         lang: candidate.getAttribute("lang"),
+        style: candidate.getAttribute("data-ipt-style"),
         associated:
           candidate.getAttribute("data-ipt-unit") === source.getAttribute("data-ipt-unit") &&
           source.getAttribute("data-ipt") === "source",
@@ -307,6 +311,21 @@ async function verifyCapture(extension, stub, capture) {
   await page.waitForFunction(() => document.querySelectorAll('[data-ipt="target"]').length > 0, undefined, {
     timeout: 30_000,
   });
+
+  // A capture may pin the display style it was recorded with (SC-012). Applying it after the
+  // translation also exercises the live restyle path.
+  const capturedStyle = capture.displayStyle ?? "none";
+  if (capturedStyle !== "none") {
+    await sendToPage(extension.context, pageUrl, { type: "setDisplayStyle", style: capturedStyle });
+    await page.waitForFunction(
+      (style) => {
+        const targets = Array.from(document.querySelectorAll('[data-ipt="target"]'));
+        return targets.length > 0 && targets.every((target) => target.getAttribute("data-ipt-style") === style);
+      },
+      capturedStyle,
+      { timeout: 10_000 },
+    );
+  }
   await page.waitForTimeout(500);
 
   const observed = await observe(page, capture.mode);

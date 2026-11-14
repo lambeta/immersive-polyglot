@@ -1,3 +1,5 @@
+@import "../../styles/display-styles.css";
+
 :root {
   color-scheme: light dark;
   font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -89,6 +91,48 @@ select {
 .usage ul {
   margin: 0;
   padding-inline-start: 1.1rem;
+}
+
+.style-picker {
+  border: 1px solid ButtonBorder;
+  border-radius: 0.45rem;
+  padding: 0.5rem;
+  margin: 0;
+  max-height: 12rem;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.style-picker legend {
+  font-weight: 600;
+  padding-inline: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.style-picker-option {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  font-weight: 400;
+  padding: 0.12rem 0.2rem;
+  border-radius: 0.3rem;
+}
+
+.style-picker-option:has(input:checked) {
+  background: ButtonFace;
+}
+
+.style-picker-text {
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.style-picker-icon {
+  width: 1.5rem;
+  display: inline-flex;
+  justify-content: center;
+  color: ButtonText;
 }
 
 [hidden] {

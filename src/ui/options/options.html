@@ -17,6 +17,7 @@
       <button type="button" aria-controls="panel-sites" aria-expanded="false" data-i18n="tabSites"></button>
       <button type="button" aria-controls="panel-glossary" aria-expanded="false" data-i18n="tabGlossary"></button>
       <button type="button" aria-controls="panel-style" aria-expanded="false" data-i18n="tabStyle"></button>
+      <button type="button" aria-controls="panel-display" aria-expanded="false" data-i18n="tabDisplay"></button>
       <button type="button" aria-controls="panel-privacy" aria-expanded="false" data-i18n="tabPrivacy"></button>
       <button type="button" aria-controls="panel-diagnostics" aria-expanded="false" data-i18n="tabDiagnostics"></button>
     </nav>
@@ -167,6 +168,10 @@
                 <option value="only" data-i18n="popupModeOnly"></option>
               </select>
             </div>
+            <div data-field>
+              <label for="site-style" data-i18n="displayStyleLabel"></label>
+              <select id="site-style"></select>
+            </div>
           </div>
           <label class="inline">
             <input type="checkbox" id="site-auto" />
@@ -247,6 +252,15 @@
         </div>
         <button type="button" id="style-save" data-i18n="styleSave"></button>
         <p id="style-feedback" class="feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- Display style -->
+      <section id="panel-display" aria-labelledby="display-heading" class="panel" hidden>
+        <h2 id="display-heading" data-i18n="displayTitle"></h2>
+        <p class="hint" data-i18n="displayStyleHint"></p>
+        <div id="display-style-picker"></div>
+        <button type="button" id="display-style-save" data-i18n="displayStyleSave"></button>
+        <p id="display-style-feedback" class="feedback" role="status" aria-live="polite"></p>
       </section>
 
       <!-- Privacy and data -->

@@ -2,27 +2,63 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CURRENT_SCHEMA_VERSION, SettingsStore, type Migration } from "../../src/shared/settings.js";
+import { MIGRATIONS } from "../../src/shared/migrations.js";
 import { MemoryStorageArea } from "../support/memory-storage.js";
 
 /**
  * T087: every schemaVersion path starts from a stored fixture of the old shape, not from an
- * object the test invented (contracts/storage-schema.md section 3, constitution principle IV).
+ * object the test invented (contracts/settings-and-messages.md section 2, constitution IV).
  */
 
 const V1_FIXTURE = JSON.parse(
   readFileSync(join(import.meta.dirname, "../fixtures/storage/v1.json"), "utf8"),
 ) as Record<string, unknown>;
 
+const V2_FIXTURE = JSON.parse(
+  readFileSync(join(import.meta.dirname, "../fixtures/storage/v2.json"), "utf8"),
+) as Record<string, unknown>;
+
 describe("migration paths", () => {
-  it("loads the v1 fixture unchanged at the current version", async () => {
+  it("migrates the v1 fixture to the current version and writes once", async () => {
     const area = new MemoryStorageArea(V1_FIXTURE);
     const loaded = await new SettingsStore(area).load();
 
     expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(loaded.ui.displayStyle).toBe("none");
     expect(loaded.providers[0]?.name).toBe("Legacy provider");
     expect(loaded.glossary[0]?.targetTerm).toBe("潮汐");
     expect(loaded.routing.defaultProviderId).toBe("p_legacy");
     expect(await area.get(["schemaVersion"])).toEqual({ schemaVersion: CURRENT_SCHEMA_VERSION });
+  });
+
+  it("produces the frozen v2 fixture exactly", async () => {
+    const area = new MemoryStorageArea(V1_FIXTURE);
+    await new SettingsStore(area).load();
+    expect(await area.get(null)).toEqual(V2_FIXTURE);
+  });
+
+  it("is pure and idempotent", () => {
+    const step = MIGRATIONS.find((migration) => migration.to === 2);
+    expect(step).toBeDefined();
+    if (!step) return;
+    const once = step.apply({ ...V1_FIXTURE });
+    const twice = step.apply({ ...once });
+    expect(twice).toEqual(once);
+    expect(once["ui"]).toMatchObject({ displayStyle: "none" });
+  });
+
+  it("drops an unknown site style and keeps a catalogued one (FR-020)", async () => {
+    const withSites = {
+      ...V1_FIXTURE,
+      sites: [
+        { sitePattern: "news.example", displayStyle: "not-a-style", autoTranslate: false },
+        { sitePattern: "docs.example", displayStyle: "quote", autoTranslate: true },
+      ],
+    };
+    const area = new MemoryStorageArea(withSites);
+    const loaded = await new SettingsStore(area).load();
+    expect(loaded.sites[0]?.displayStyle).toBeUndefined();
+    expect(loaded.sites[1]?.displayStyle).toBe("quote");
   });
 
   it("upgrades the v1 fixture through an ordered chain and writes once", async () => {
@@ -89,11 +125,12 @@ describe("migration paths", () => {
     expect(await area.get(null)).toEqual(V1_FIXTURE);
   });
 
-  it("treats a fixture with no schemaVersion as v1", async () => {
+  it("treats a fixture with no schemaVersion as v1 and migrates it forward", async () => {
     const { schemaVersion: _dropped, ...withoutVersion } = V1_FIXTURE;
     const area = new MemoryStorageArea(withoutVersion);
     const loaded = await new SettingsStore(area).load();
-    expect(loaded.schemaVersion).toBe(1);
-    expect(await area.get(["schemaVersion"])).toEqual({ schemaVersion: 1 });
+    expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(loaded.ui.displayStyle).toBe("none");
+    expect(await area.get(["schemaVersion"])).toEqual({ schemaVersion: CURRENT_SCHEMA_VERSION });
   });
 });

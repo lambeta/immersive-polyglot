@@ -16,6 +16,9 @@ export class Journal {
   /** The style attribute is journalled whole, once per element: property-level undo leaves an
    * empty style="" behind, which is visible residue to a hash comparison (FR-019). */
   readonly #styled = new Set<Element>();
+  /** Attributes whose original value is already recorded, so repeated writes (style switching)
+   * do not grow the journal (FR-016). */
+  #attributes = new WeakMap<Element, Set<string>>();
 
   get size(): number {
     return this.#entries.length;
@@ -38,6 +41,15 @@ export class Journal {
     });
   }
 
+  /** FR-016: a value that will be rewritten many times is journalled once, with its original. */
+  recordAttributeOnce(element: Element, name: string): void {
+    const names = this.#attributes.get(element) ?? new Set<string>();
+    if (names.has(name)) return;
+    names.add(name);
+    this.#attributes.set(element, names);
+    this.recordAttribute(element, name);
+  }
+
   recordStyle(element: HTMLElement): void {
     if (this.#styled.has(element)) return;
     this.#styled.add(element);
@@ -50,6 +62,7 @@ export class Journal {
 
   clear(): void {
     this.#entries.length = 0;
+    this.#attributes = new WeakMap<Element, Set<string>>();
   }
 
   /** Replay in reverse: the last write is undone first, so overlapping writes unwind exactly. */
@@ -73,6 +86,7 @@ export class Journal {
     }
     this.#entries.length = 0;
     this.#styled.clear();
+    this.#attributes = new WeakMap<Element, Set<string>>();
     return replayed;
   }
 }

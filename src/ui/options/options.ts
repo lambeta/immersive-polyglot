@@ -1,6 +1,9 @@
 import { localize, t } from "../shared/i18n.js";
 import { clear, el, formatDate, qs } from "../shared/dom.js";
 import { CredentialField } from "../shared/credential-field.js";
+import { StylePicker } from "../shared/style-picker.js";
+import { previewIcon } from "../shared/style-preview.js";
+import { DISPLAY_STYLES, displayStyleById, isDisplayStyleId, resolveDisplayStyle } from "../../shared/display-styles.js";
 import { createSettingsStore, defaultSettings } from "../../shared/settings.js";
 import { deleteProviderCascade, saveProvider } from "../../shared/providers.js";
 import { addEntry } from "../../shared/glossary.js";
@@ -13,6 +16,7 @@ import {
 } from "../../shared/validation.js";
 import type {
   DisplayMode,
+  DisplayStyleId,
   GlossaryEntry,
   RoutingRule,
   Settings,
@@ -28,6 +32,7 @@ import type { CredentialMaskReply } from "../../shared/messages.js";
 
 const store = createSettingsStore();
 let settings: Settings;
+let stylePicker: StylePicker | null = null;
 let editingProviderId: string | null = null;
 let credentialField: CredentialField;
 
@@ -412,6 +417,7 @@ async function renderSites(): Promise<void> {
         text: [
           site.targetLang ? `→ ${site.targetLang}` : "",
           site.displayMode ? t(`popupMode${capitalise(site.displayMode)}`) : "",
+          site.displayStyle ? t(displayStyleById(resolveDisplayStyle(site.displayStyle)).nameKey) : "",
           site.autoTranslate ? t("sitesAuto") : "",
         ]
           .filter(Boolean)
@@ -423,6 +429,15 @@ async function renderSites(): Promise<void> {
     ]);
     list.append(el("li", {}, [meta, actions]));
   }
+
+  const styleSelect = qs<HTMLSelectElement>(document, "#site-style");
+  const previousStyle = styleSelect.value;
+  clear(styleSelect);
+  styleSelect.append(el("option", { value: "", text: t("displayStyleInherit") }));
+  for (const style of DISPLAY_STYLES) {
+    styleSelect.append(el("option", { value: style.id, text: t(style.nameKey) }));
+  }
+  styleSelect.value = isDisplayStyleId(previousStyle) ? previousStyle : "";
 
   setValue("ui-source", settings.ui.sourceLang);
   setValue("ui-target", settings.ui.targetLang);
@@ -446,6 +461,7 @@ async function saveSite(): Promise<void> {
     }
   }
 
+  const chosenStyle = value("site-style");
   await store.save((current) => {
     const existing = current.sites.find((preference) => preference.sitePattern === pattern);
     const next = {
@@ -454,9 +470,14 @@ async function saveSite(): Promise<void> {
       displayMode: value("site-mode") as DisplayMode,
       providerId: value("site-provider") || null,
       autoTranslate: checked("site-auto"),
+      ...(isDisplayStyleId(chosenStyle) ? { displayStyle: chosenStyle } : {}),
     };
-    if (existing) Object.assign(existing, next);
-    else current.sites.push(next);
+    if (existing) {
+      Object.assign(existing, next);
+      if (!isDisplayStyleId(chosenStyle)) delete existing.displayStyle;
+    } else {
+      current.sites.push(next);
+    }
     return current;
   });
   await notifyContent();
@@ -618,11 +639,39 @@ async function renderAll(): Promise<void> {
   await renderSites();
   await renderGlossary();
   await renderSiteCaps();
+  renderDisplayPanel();
   setValue("style-instruction", settings.style.instruction);
   setValue("style-temperature", settings.style.temperature);
   setValue("session-cap", settings.limits.sessionCapSegments);
   setValue("char-cap", settings.limits.sessionCapChars);
   await renderDiagnostics();
+}
+
+/* ---------------------------------------------------------------- display style */
+
+function renderDisplayPanel(): void {
+  const host = qs<HTMLElement>(document, "#display-style-picker");
+  if (!stylePicker) {
+    stylePicker = new StylePicker({
+      name: "display-style",
+      legend: t("displayStyleLabel"),
+      showSample: true,
+      sampleText: t("displayStyleSample"),
+      showIcons: true,
+      iconFor: previewIcon,
+    });
+    clear(host);
+    host.append(stylePicker.element);
+  }
+  stylePicker.setValue(settings.ui.displayStyle);
+}
+
+async function notifyStyleChanged(style: DisplayStyleId): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage({ type: "styleChanged", style });
+  } catch {
+    // No receiver is not a failure: the next render resolves the style from storage.
+  }
 }
 
 function wireTabs(): void {
@@ -755,6 +804,17 @@ function wireForms(): void {
     await renderGlossary();
   });
 
+  qs<HTMLButtonElement>(document, "#display-style-save").addEventListener("click", async () => {
+    const style = stylePicker?.value ?? "none";
+    await store.save((current) => {
+      current.ui.displayStyle = style;
+      return current;
+    });
+    settings = await store.load();
+    await notifyStyleChanged(style);
+    feedback("display-style-feedback", t("displayStyleSaved"));
+  });
+
   qs<HTMLButtonElement>(document, "#style-save").addEventListener("click", async () => {
     await store.save((current) => {
       current.style.instruction = value("style-instruction");
@@ -791,6 +851,20 @@ async function boot(): Promise<void> {
   wireTabs();
   wireForms();
   await renderAll();
+
+  // FR-005: a change made in the page control is reflected here without a reload.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    // A key that was removed (delete-all) is not a new value to load: reloading here would write
+    // the schema version straight back and make the wipe look partial (FR-021, SC-013).
+    const uiChanged = changes["ui"]?.newValue !== undefined;
+    const sitesChanged = changes["sites"]?.newValue !== undefined;
+    if (!uiChanged && !sitesChanged) return;
+    void store.load().then((next) => {
+      settings = next;
+      stylePicker?.setValue(next.ui.displayStyle);
+    });
+  });
 
   // A fresh profile starts on the product's expected default provider (DeepSeek), with the
   // credential still blank. The user can overwrite any field or pick another endpoint entirely.

@@ -99,6 +99,18 @@ test("the diagnostics view masks the credential and delete-all leaves nothing be
   expect(diagnostics).toContain("••••7654");
   expect(diagnostics).not.toContain("sk-e2e-uvwxyz987654");
 
+  // A saved display style (global and per site) must not survive the wipe either.
+  await options.evaluate(async () => {
+    const current = await chrome.storage.local.get(null);
+    await chrome.storage.local.set({
+      ...current,
+      ui: { ...(current["ui"] as Record<string, unknown>), displayStyle: "marker" },
+      sites: [{ sitePattern: "news.example", displayStyle: "quote", autoTranslate: false }],
+    });
+  });
+  const beforeDelete = await readExtensionStorage(options);
+  expect((beforeDelete["ui"] as Record<string, unknown>)["displayStyle"]).toBe("marker");
+
   options.on("dialog", (dialog) => void dialog.accept());
   await options.getByRole("button", { name: "Privacy and data" }).click();
   await options.click("#delete-all");

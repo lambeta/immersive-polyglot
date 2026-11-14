@@ -7,7 +7,8 @@ import {
 } from "../shared/messages.js";
 import { resolveProvider } from "../shared/routing.js";
 import { createSettingsStore } from "../shared/settings.js";
-import type { DisplayMode, ErrorClass, Settings } from "../shared/types.js";
+import { resolveDisplayStyleForHost } from "../shared/display-styles.js";
+import type { DisplayMode, DisplayStyleId, ErrorClass, Settings } from "../shared/types.js";
 import { RequestLimiter, VolumeBudget } from "./limiter.js";
 import { PageObserver } from "./observer.js";
 import { TranslationJob, type BatchCaller, type BatchReply, type BatchRequestPayload } from "./job.js";
@@ -197,6 +198,10 @@ function displayModeFor(settings: Settings): DisplayMode {
   return site?.displayMode ?? settings.ui.displayMode;
 }
 
+function displayStyleFor(settings: Settings): DisplayStyleId {
+  return resolveDisplayStyleForHost(settings, location.hostname).styleId;
+}
+
 function targetLangFor(settings: Settings): string {
   const host = location.hostname;
   const site = settings.sites.find((preference) => matches(preference.sitePattern, host));
@@ -284,6 +289,7 @@ async function startTranslation(options: { providerOverrideId?: string; elements
     settings: current,
     providerId: provider.id,
     displayMode: displayModeFor(current),
+    displayStyle: displayStyleFor(current),
     targetLang,
     sourceLang: current.ui.sourceLang,
     caller: portClient,
@@ -354,6 +360,17 @@ function handleCommand(command: CommandMessage, sendResponse: (reply: unknown) =
     case "cancelJob":
       job?.cancel();
       portClient.cancelPending();
+      sendResponse({ ok: true });
+      return;
+    case "setDisplayStyle":
+      // FR-002: restyle what is already on the page; the next render resolves from storage.
+      cachedSettings = null;
+      job?.setDisplayStyle(command.style);
+      sendResponse({ ok: true });
+      return;
+    case "setDisplayMode":
+      // The page control has always sent this; routing it here keeps the pair consistent.
+      job?.setDisplayMode(command.mode);
       sendResponse({ ok: true });
       return;
     case "getJobStatus":

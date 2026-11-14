@@ -62,6 +62,8 @@ export type CommandMessage =
   | { type: "toggleTranslation" }
   | { type: "cancelJob" }
   | { type: "setDisplayMode"; mode: DisplayMode }
+  | { type: "setDisplayStyle"; style: string }
+  | { type: "styleChanged"; style: string }
   | { type: "getJobStatus" }
   | { type: "jobUpdated"; status: JobStatusPayload }
   | { type: "providerChanged" }
@@ -88,6 +90,8 @@ const COMMAND_TYPES = [
   "toggleTranslation",
   "cancelJob",
   "setDisplayMode",
+  "setDisplayStyle",
+  "styleChanged",
   "getJobStatus",
   "jobUpdated",
   "providerChanged",
@@ -256,6 +260,15 @@ export function parseCommand(raw: unknown): CommandMessage {
         mode:
           payload["mode"] === "above" || payload["mode"] === "only" ? payload["mode"] : "bilingual",
       };
+    case "setDisplayStyle":
+    case "styleChanged": {
+      // FR-020: an unknown id is accepted and resolves to `none`; a non-string is invalid.
+      const style = payload["style"];
+      if (typeof style !== "string") {
+        throw new MessageError("invalidPayload", `${type}.style must be a string`);
+      }
+      return { type, style };
+    }
     case "translatePage":
       return typeof payload["providerOverrideId"] === "string" &&
         payload["providerOverrideId"].length > 0

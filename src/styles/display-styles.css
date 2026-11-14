@@ -1,0 +1,161 @@
+/*
+ * Translation display styles (FR-001). Every rule is keyed on this product's own style marker,
+ * so no page-authored element is restyled. The same file is bundled into the two UI pages, which
+ * makes the picker's live sample literally the same rules as the injected rendering.
+ *
+ * No !important: the marker attribute is specific enough. Decoration never changes placement,
+ * float or the block's display type; that stays with feature 001's content.css.
+ */
+
+/* none: deliberately no rules. */
+
+/* --- text decoration ------------------------------------------------------- */
+
+[data-ipt-style="underline-dashed"] {
+  text-decoration: underline dashed currentColor;
+  text-underline-offset: 3px;
+}
+
+[data-ipt-style="underline-solid"] {
+  text-decoration: underline solid currentColor;
+  text-underline-offset: 3px;
+}
+
+[data-ipt-style="underline-dotted"] {
+  text-decoration: underline dotted currentColor;
+  text-underline-offset: 3px;
+}
+
+/* --- borders --------------------------------------------------------------- */
+
+[data-ipt-style="border-dashed"],
+[data-ipt-style="border-solid"] {
+  padding-block: 0.15em;
+  padding-inline: 0.35em;
+  border-radius: 2px;
+}
+
+[data-ipt-style="border-dashed"] {
+  border: 1px dashed currentColor;
+}
+
+[data-ipt-style="border-solid"] {
+  border: 1px solid currentColor;
+}
+
+/* --- rules and marks ------------------------------------------------------- */
+
+[data-ipt-style="divider"] {
+  border-block-start: 1px solid currentColor;
+  padding-block-start: 0.4em;
+}
+
+[data-ipt-style="highlight"] {
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 2px;
+  padding-inline: 0.2em;
+  box-decoration-break: clone;
+}
+
+[data-ipt-style="marker"] {
+  background-image: linear-gradient(
+    transparent 55%,
+    color-mix(in srgb, currentColor 24%, transparent) 55%
+  );
+  padding-inline: 0.12em;
+}
+
+[data-ipt-style="marker-2"] {
+  background-image: linear-gradient(
+    100deg,
+    transparent 38%,
+    color-mix(in srgb, currentColor 30%, transparent) 38%,
+    color-mix(in srgb, currentColor 30%, transparent) 88%,
+    transparent 88%
+  );
+  padding-inline: 0.12em;
+}
+
+[data-ipt-style="quote"] {
+  border-inline-start: 3px solid currentColor;
+  padding-inline-start: 0.6em;
+  font-style: italic;
+}
+
+/* --- foreground treatments ------------------------------------------------- */
+
+[data-ipt-style="gray"] {
+  color: var(--ipt-style-fg, color-mix(in srgb, currentColor 55%, transparent));
+  filter: grayscale(1);
+}
+
+[data-ipt-style="weakened"] {
+  color: var(--ipt-style-fg, color-mix(in srgb, currentColor 70%, transparent));
+}
+
+/* --- concealment and reveal (FR-012) --------------------------------------- */
+
+[data-ipt-style="blur"] {
+  filter: blur(4px);
+}
+
+[data-ipt-style="transparency"] {
+  opacity: 0.35;
+}
+
+[data-ipt-style="blur"]:hover,
+[data-ipt-style="blur"]:focus,
+[data-ipt-style="transparency"]:hover,
+[data-ipt-style="transparency"]:focus {
+  filter: none;
+  opacity: 1;
+}
+
+/* Weakened reveals its original colour rather than merely reaching the contrast floor. */
+[data-ipt-style="weakened"]:hover,
+[data-ipt-style="weakened"]:focus {
+  color: var(--ipt-style-base, inherit);
+}
+
+[data-ipt-style="blur"]:focus-visible,
+[data-ipt-style="transparency"]:focus-visible,
+[data-ipt-style="weakened"]:focus-visible {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+
+/* No transitions are used anywhere in this file, so reduced motion needs no override; the rule
+   below records that intent and guards any future addition (FR-018). */
+@media (prefers-reduced-motion: reduce) {
+  [data-ipt-style] {
+    transition: none;
+  }
+}
+
+/* Maximum-contrast fallback: text stays legible, and a typographic cue (underline) identifies a
+   translation without relying on colour (FR-018). */
+@media (forced-colors: active) {
+  [data-ipt-style] {
+    filter: none;
+    opacity: 1;
+  }
+
+  [data-ipt-style="highlight"],
+  [data-ipt-style="marker"],
+  [data-ipt-style="marker-2"],
+  [data-ipt-style="quote"],
+  [data-ipt-style="divider"],
+  [data-ipt-style="border-dashed"],
+  [data-ipt-style="border-solid"] {
+    background-image: none;
+    background-color: transparent;
+    border-color: CanvasText;
+  }
+
+  [data-ipt-style]:not([data-ipt-style="none"]) {
+    text-decoration: underline solid CanvasText;
+    text-underline-offset: 3px;
+    color: CanvasText;
+    font-style: normal;
+  }
+}

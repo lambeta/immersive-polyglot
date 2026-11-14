@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import type { LaunchedExtension } from "./load-extension.js";
 import type { JobStatusPayload } from "../../src/shared/messages.js";
+import { CURRENT_SCHEMA_VERSION } from "../../src/shared/settings.js";
 
 /**
  * Shared e2e plumbing. It drives the real extension through the same messages its own UI sends,
@@ -36,15 +37,18 @@ export async function writeSettings(
   patch: Record<string, unknown>,
 ): Promise<void> {
   const options = await extension.openOptions();
-  await options.evaluate(async (incoming) => {
-    const current = await chrome.storage.local.get(null);
-    await chrome.storage.local.set({ ...current, ...incoming, schemaVersion: 1 });
-    try {
-      await chrome.runtime.sendMessage({ type: "providerChanged" });
-    } catch {
-      // No listener yet is harmless; the content script reloads settings on its next command.
-    }
-  }, patch);
+  await options.evaluate(
+    async ({ incoming, version }) => {
+      const current = await chrome.storage.local.get(null);
+      await chrome.storage.local.set({ ...current, ...incoming, schemaVersion: version });
+      try {
+        await chrome.runtime.sendMessage({ type: "providerChanged" });
+      } catch {
+        // No listener yet is harmless; the content script reloads settings on its next command.
+      }
+    },
+    { incoming: patch, version: CURRENT_SCHEMA_VERSION },
+  );
   await options.close();
 }
 

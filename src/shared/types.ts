@@ -152,11 +152,31 @@ export interface SitePreference {
   sitePattern: string;
   targetLang?: string;
   displayMode?: DisplayMode;
+  /** Optional; must be a catalogued id when present (FR-019). */
+  displayStyle?: DisplayStyleId;
   providerId?: ProviderId | null;
   autoTranslate: boolean;
 }
 
 export type DisplayMode = "bilingual" | "above" | "only";
+
+/** The fifteen visual treatments a translation can take (FR-001). */
+export type DisplayStyleId =
+  | "none"
+  | "underline-dashed"
+  | "underline-solid"
+  | "border-dashed"
+  | "border-solid"
+  | "blur"
+  | "transparency"
+  | "underline-dotted"
+  | "divider"
+  | "highlight"
+  | "marker"
+  | "marker-2"
+  | "quote"
+  | "weakened"
+  | "gray";
 
 export interface GlossaryEntry {
   sourceTerm: string;
@@ -189,6 +209,8 @@ export interface UiSettings {
   targetLang: string;
   sourceLang: string;
   displayMode: DisplayMode;
+  /** Optional in storage; missing or unknown resolves to `none` (FR-004, FR-020). */
+  displayStyle?: DisplayStyleId;
 }
 
 export interface RoutingSettings {

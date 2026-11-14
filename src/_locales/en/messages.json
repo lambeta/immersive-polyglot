@@ -520,5 +520,74 @@
   },
   "providerPresetHint": {
     "message": "Prefills the name, endpoint and model for DeepSeek. The credential is still yours to enter; every field stays editable and any OpenAI-compatible endpoint works."
+  },
+  "tabDisplay": {
+    "message": "Display"
+  },
+  "displayTitle": {
+    "message": "Translation display style"
+  },
+  "displayStyleLabel": {
+    "message": "Translation display style"
+  },
+  "displayStyleHint": {
+    "message": "Choose how translations look. The sample updates before you save."
+  },
+  "displayStyleSample": {
+    "message": "This is how a translated sentence looks."
+  },
+  "displayStyleSave": {
+    "message": "Save display style"
+  },
+  "displayStyleSaved": {
+    "message": "Display style saved."
+  },
+  "displayStyleInherit": {
+    "message": "Use the device-wide style"
+  },
+  "displayStyleNone": {
+    "message": "None"
+  },
+  "displayStyleUnderlineDashed": {
+    "message": "Dashed underline"
+  },
+  "displayStyleUnderlineSolid": {
+    "message": "Solid underline"
+  },
+  "displayStyleBorderDashed": {
+    "message": "Dashed border"
+  },
+  "displayStyleBorderSolid": {
+    "message": "Solid border"
+  },
+  "displayStyleBlur": {
+    "message": "Blur (study mode)"
+  },
+  "displayStyleTransparency": {
+    "message": "Transparency"
+  },
+  "displayStyleUnderlineDotted": {
+    "message": "Dotted underline"
+  },
+  "displayStyleDivider": {
+    "message": "Divider"
+  },
+  "displayStyleHighlight": {
+    "message": "Highlight"
+  },
+  "displayStyleMarker": {
+    "message": "Marker pen"
+  },
+  "displayStyleMarker2": {
+    "message": "Marker pen 2"
+  },
+  "displayStyleQuote": {
+    "message": "Quote"
+  },
+  "displayStyleWeakened": {
+    "message": "Weakened"
+  },
+  "displayStyleGray": {
+    "message": "Gray"
   }
 }

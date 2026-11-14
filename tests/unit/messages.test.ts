@@ -131,4 +131,21 @@ describe("command guard", () => {
   it("refuses a command carrying a credential", () => {
     expect(() => parseCommand({ type: "translatePage", credential: "x" })).toThrowError(/credential/);
   });
+
+  it("parses the style commands (FR-002, FR-019)", () => {
+    expect(parseCommand({ type: "setDisplayStyle", style: "marker" })).toEqual({
+      type: "setDisplayStyle",
+      style: "marker",
+    });
+    expect(parseCommand({ type: "styleChanged", style: "quote" })).toEqual({
+      type: "styleChanged",
+      style: "quote",
+    });
+  });
+
+  it("accepts an unknown style id but rejects a non-string one (FR-020)", () => {
+    expect(parseCommand({ type: "setDisplayStyle", style: "gone" })).toMatchObject({ style: "gone" });
+    expect(() => parseCommand({ type: "setDisplayStyle" })).toThrowError(/style/);
+    expect(() => parseCommand({ type: "styleChanged", style: 3 })).toThrowError(/style/);
+  });
 });

@@ -257,6 +257,18 @@ async function handleCommand(command: CommandMessage, sendResponse: (reply: unkn
       sendResponse({ ok: true });
       return;
     }
+    case "styleChanged": {
+      // contracts/settings-and-messages.md section 4.2: relay the style to every tab.
+      const tabs = await chrome.tabs.query({});
+      for (const tab of tabs) {
+        if (tab.id === undefined) continue;
+        chrome.tabs.sendMessage(tab.id, { type: "setDisplayStyle", style: command.style }).catch(() => {
+          // A tab without the content script is not a failure.
+        });
+      }
+      sendResponse({ ok: true });
+      return;
+    }
     default:
       sendResponse({ ok: false, ignored: command.type });
   }

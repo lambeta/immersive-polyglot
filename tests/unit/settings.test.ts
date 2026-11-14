@@ -8,9 +8,9 @@ import {
 } from "../../src/shared/settings.js";
 import { MemoryStorageArea } from "../support/memory-storage.js";
 
-function store(area: MemoryStorageArea, migrations: Migration[] = [], currentVersion?: number) {
+function store(area: MemoryStorageArea, migrations?: Migration[], currentVersion?: number) {
   return new SettingsStore(area, {
-    migrations,
+    ...(migrations === undefined ? {} : { migrations }),
     ...(currentVersion === undefined ? {} : { currentVersion }),
   });
 }
@@ -23,6 +23,7 @@ describe("settings defaults", () => {
     expect(loaded.providers).toEqual([]);
     expect(loaded.routing.defaultProviderId).toBeNull();
     expect(loaded.ui.displayMode).toBe("bilingual");
+    expect(loaded.ui.displayStyle).toBe("none");
     expect(loaded.limits.maxConcurrency).toBe(3);
     expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(await area.get(["schemaVersion"])).toEqual({ schemaVersion: CURRENT_SCHEMA_VERSION });
@@ -38,16 +39,17 @@ describe("settings defaults", () => {
     expect(loaded.providers).toHaveLength(1);
     expect(loaded.ui.targetLang).toBe("ja");
     expect(loaded.ui.displayMode).toBe("bilingual");
+    expect(loaded.ui.displayStyle).toBe("none");
     expect(loaded.limits.sessionCapSegments).toBe(0);
   });
 });
 
 describe("schema versioning", () => {
-  it("treats a missing schemaVersion as version 1 and writes it back", async () => {
+  it("treats a missing schemaVersion as version 1 and migrates it forward", async () => {
     const area = new MemoryStorageArea({ providers: [] });
     const loaded = await store(area).load();
-    expect(loaded.schemaVersion).toBe(1);
-    expect(await area.get(["schemaVersion"])).toEqual({ schemaVersion: 1 });
+    expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(await area.get(["schemaVersion"])).toEqual({ schemaVersion: CURRENT_SCHEMA_VERSION });
   });
 
   it("refuses to write when the stored profile is newer than this build", async () => {
@@ -171,8 +173,8 @@ describe("write guards", () => {
   });
 
   it("maps a storage quota failure to an actionable error and saves nothing", async () => {
-    // Seeded so the load phase cannot be the write that fails.
-    const area = new MemoryStorageArea({ schemaVersion: 1 });
+    // Seeded at the current version so the load phase cannot be the write that fails.
+    const area = new MemoryStorageArea({ schemaVersion: CURRENT_SCHEMA_VERSION });
     const settingsStore = store(area);
     area.failNextSet(new Error("QUOTA_BYTES quota exceeded"));
 
@@ -205,5 +207,18 @@ describe("delete all data (FR-024)", () => {
     const remaining = await store(area).deleteAll();
     expect(remaining).toEqual([]);
     expect(area.size).toBe(0);
+  });
+
+  it("resets the display style to none when everything is deleted (SC-013)", async () => {
+    const area = new MemoryStorageArea({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      ui: { targetLang: "zh", displayStyle: "marker" },
+      sites: [{ sitePattern: "news.example", displayStyle: "quote", autoTranslate: false }],
+    });
+    await store(area).deleteAll();
+
+    const loaded = await store(area).load();
+    expect(loaded.ui.displayStyle).toBe("none");
+    expect(loaded.sites).toEqual([]);
   });
 });

@@ -2,7 +2,10 @@ import { localize, t } from "../shared/i18n.js";
 import { clear, el, qs } from "../shared/dom.js";
 import { createSettingsStore } from "../../shared/settings.js";
 import { matchSite } from "../../shared/routing.js";
-import type { DisplayMode, Settings } from "../../shared/types.js";
+import { resolveDisplayStyleForHost } from "../../shared/display-styles.js";
+import { StylePicker } from "../shared/style-picker.js";
+import { previewIcon } from "../shared/style-preview.js";
+import type { DisplayMode, DisplayStyleId, Settings } from "../../shared/types.js";
 import type { CommandMessage, JobStatusPayload } from "../../shared/messages.js";
 
 /**
@@ -16,6 +19,7 @@ let status: JobStatusPayload | null = null;
 let tabId: number | undefined;
 let host = "";
 let providerOverride: string | null = null;
+let stylePicker: StylePicker | null = null;
 
 const IDLE: JobStatusPayload = {
   jobId: null,
@@ -69,6 +73,37 @@ function buildProviderSelect(): void {
 function buildModeSelect(): void {
   const select = qs<HTMLSelectElement>(document, "#mode");
   select.value = displayModeForSite();
+}
+
+function buildStylePicker(): void {
+  const hostElement = qs<HTMLElement>(document, "#display-style-picker");
+  if (!stylePicker) {
+    stylePicker = new StylePicker({
+      name: "popup-display-style",
+      legend: t("displayStyleLabel"),
+      showIcons: true,
+      iconFor: previewIcon,
+      onChange: (style) => void persistSiteStyle(style),
+    });
+    clear(hostElement);
+    hostElement.append(stylePicker.element);
+  }
+  stylePicker.setValue(resolveDisplayStyleForHost(settings, host).styleId);
+}
+
+/**
+ * FR-019: a choice made from the page control applies to this site (created if absent), leaving
+ * other sites on the device-wide style. The live command restyles the page immediately.
+ */
+async function persistSiteStyle(style: DisplayStyleId): Promise<void> {
+  await store.save((current) => {
+    const existing = current.sites.find((preference) => matchSite(preference.sitePattern, host));
+    if (existing) existing.displayStyle = style;
+    else current.sites.push({ sitePattern: host, displayStyle: style, autoTranslate: false });
+    return current;
+  });
+  settings = await store.load();
+  void sendCommand({ type: "setDisplayStyle", style }).then(() => refreshStatus());
 }
 
 function render(): void {
@@ -160,10 +195,17 @@ async function boot(): Promise<void> {
 
   const query = await chrome.tabs.query({ active: true, currentWindow: true });
   // The panel is normally not a tab at all. When it is opened as one (tests, debugging), it must
-  // still act on the page the reader is looking at rather than on itself.
+  // still act on the page the reader is looking at rather than on itself. A page can live in
+  // another window (Playwright opens one per target), so fall back to a global query before
+  // settling for the panel itself: an empty host would silently write an empty site pattern.
+  const httpTab = (candidates: chrome.tabs.Tab[]) =>
+    candidates.find((candidate) => candidate.active && candidate.url?.startsWith("http")) ??
+    candidates.find((candidate) => candidate.url?.startsWith("http"));
+  const all = await chrome.tabs.query({});
   const tab =
-    query.find((candidate) => candidate.url?.startsWith("http")) ??
+    httpTab(query) ??
     query.find((candidate) => !candidate.url?.startsWith("chrome-extension://")) ??
+    httpTab(all) ??
     query[0];
   tabId = tab?.id;
   host = tab?.url ? new URL(tab.url).hostname : "";
@@ -171,6 +213,7 @@ async function boot(): Promise<void> {
   settings = await store.load();
   buildProviderSelect();
   buildModeSelect();
+  buildStylePicker();
 
   const reply = (await sendCommand({ type: "getJobStatus" })) as JobStatusPayload | null;
   status = reply ?? null;
@@ -211,6 +254,18 @@ async function boot(): Promise<void> {
     if (command.type !== "jobUpdated") return;
     status = command.status;
     render();
+  });
+
+  // FR-005: a change made elsewhere is reflected here without a reload.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    const uiChanged = changes["ui"]?.newValue !== undefined;
+    const sitesChanged = changes["sites"]?.newValue !== undefined;
+    if (!uiChanged && !sitesChanged) return;
+    void store.load().then((next) => {
+      settings = next;
+      stylePicker?.setValue(resolveDisplayStyleForHost(next, host).styleId);
+    });
   });
 }
 

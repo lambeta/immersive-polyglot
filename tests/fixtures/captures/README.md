@@ -13,6 +13,7 @@ tests/fixtures/captures/<page-id>/<mode>.json
 {
   "page": "news-article-a.html",
   "mode": "bilingual",
+  "displayStyle": "divider",
   "capturedWith": "Immersive Translate <version>, Chrome <version>, viewport 1280x800",
   "capturedAt": "YYYY-MM-DD",
   "segments": [
@@ -29,6 +30,11 @@ tests/fixtures/captures/<page-id>/<mode>.json
   "restoreBaseline": { "domHash": "<hash before translation>", "scrollY": 0 }
 }
 ```
+
+`displayStyle` records the translation style in effect during the capture (one of the fifteen in
+`specs/002-translation-display-styles/contracts/display-style-catalog.md`; absent means `none`). The
+comparison applies that style before observing, so the captured rendering is checked with its style,
+not only with its placement.
 
 The capture is manual and one-time because installing a store extension is interactive. Re-capturing
 requires a recorded reason in this file: it silently redefines "correct".

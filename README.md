@@ -14,6 +14,10 @@ travels only to the endpoint you configure; page text travels only there too.
   fills the fields, the credential is still yours to enter, and any endpoint works.
 - **Bilingual reading.** Each paragraph gets its translation as an adjacent block, with the display
   mode you choose (translation below, above, or instead of the original).
+- **Fifteen translation display styles.** None, dashed/solid/dotted underline, dashed/solid border,
+  blur (study mode), transparency, divider, highlight, marker pen, marker pen 2, quote, weakened and
+  gray — each with a generated preview icon, applied live without re-translating, and overridable per
+  site. Choosing **Display** in the options page shows a live sample before you save.
 - **Restore exactly.** Turning translation off replays a write journal, so the page returns to its
   original state — not "close to it".
 - **Honest failures.** Every failure has a class, a message and a recovery action. Nothing is ever
@@ -41,6 +45,7 @@ npm run build        # produces dist/, loadable unpacked
 npm run typecheck    # tsc --noEmit, strict
 npm test             # unit + DOM suites (Vitest)
 npm run test:e2e     # builds, then Playwright against real Chromium + a local stub provider
+npm run verify:styles # fifteen-style capture: distinctness, restore, contrast, layout, restyle time
 ```
 
 The e2e suite needs a Playwright Chromium build. In an environment where the default browser cache
@@ -144,6 +149,7 @@ manifest, the locale catalog and the manifest-declared stylesheet verbatim.
 | Unit (node) | `tests/unit` | segmentation, batching, prompt assembly, parsing, retry, caps, routing, glossary, settings/migrations, credential masking, i18n coverage, performance |
 | DOM (jsdom) | `tests/dom` | rendering placement and modes, journal restore with a DOM hash, 20 translate/restore cycles, observer idempotence |
 | End-to-end (Chromium) | `tests/e2e` | the whole product against real `chrome.storage` and real HTTP to a local stub provider, plus accessibility and RTL |
+| Style verification (Chromium) | `scripts/verify-styles.mjs` | 105-pair style distinctness, exact restore per style, measured contrast on light and dark pages, the mode × direction layout matrix, and 120-block restyle time |
 
 The stub provider in `tests/support/stub-provider.ts` is the one permitted double: a provider is
 the user's to run, not ours. It also serves the fixture pages over HTTP so the extension meets them

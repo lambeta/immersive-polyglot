@@ -9,6 +9,8 @@ import type {
   TranslationProvider,
   UiSettings,
 } from "./types.js";
+import { isDisplayStyleId } from "./display-styles.js";
+import { MIGRATIONS } from "./migrations.js";
 
 /**
  * Persisted configuration access. Implements contracts/storage-schema.md: defaults, the
@@ -16,7 +18,7 @@ import type {
  * result, and the refusal to write over a profile produced by a newer build.
  */
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export const STORAGE_KEYS = [
   "schemaVersion",
@@ -77,7 +79,7 @@ export function defaultSettings(): Settings {
     glossary: [],
     style: { instruction: "", temperature: 0 },
     limits: { maxConcurrency: 3, sessionCapSegments: 0, sessionCapChars: 0, siteCaps: {} },
-    ui: { targetLang: "zh", sourceLang: "auto", displayMode: "bilingual" },
+    ui: { targetLang: "zh", sourceLang: "auto", displayMode: "bilingual", displayStyle: "none" },
   };
 }
 
@@ -171,6 +173,9 @@ function mergeDefaults(stored: Record<string, unknown>): Settings {
             stored["ui"]["displayMode"] === "bilingual"
               ? stored["ui"]["displayMode"]
               : "bilingual",
+          displayStyle: isDisplayStyleId(stored["ui"]["displayStyle"])
+            ? stored["ui"]["displayStyle"]
+            : "none",
         }
       : base.ui,
   };
@@ -184,14 +189,14 @@ export interface SettingsStoreOptions {
 
 export class SettingsStore {
   readonly #area: StorageAreaLike;
-  readonly #migrations: Migration[];
+  readonly #migrations: readonly Migration[];
   readonly #currentVersion: number;
   #newerSchema = false;
   #queue: Promise<unknown> = Promise.resolve();
 
   constructor(area: StorageAreaLike, options: SettingsStoreOptions = {}) {
     this.#area = area;
-    this.#migrations = options.migrations ?? [];
+    this.#migrations = options.migrations ?? MIGRATIONS;
     this.#currentVersion = options.currentVersion ?? CURRENT_SCHEMA_VERSION;
   }
 

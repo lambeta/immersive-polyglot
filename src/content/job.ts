@@ -6,6 +6,7 @@ import type { PageObserver } from "./observer.js";
 import type { VolumeBudget, RequestLimiter } from "./limiter.js";
 import type {
   DisplayMode,
+  DisplayStyleId,
   ErrorClass,
   JobCounts,
   JobState,
@@ -50,6 +51,7 @@ export interface JobOptions {
   settings: Settings;
   providerId: string;
   displayMode: DisplayMode;
+  displayStyle?: DisplayStyleId;
   targetLang: string;
   sourceLang: string;
   caller: BatchCaller;
@@ -105,6 +107,7 @@ export class TranslationJob {
     this.#sourceLang = options.sourceLang;
     this.#renderer = new Renderer(this.#journal, {
       displayMode: options.displayMode,
+      displayStyle: options.displayStyle,
       targetLang: options.targetLang,
       view: options.view ?? null,
     });
@@ -369,6 +372,11 @@ export class TranslationJob {
 
   setDisplayMode(mode: DisplayMode): void {
     this.#renderer.setDisplayMode(mode);
+  }
+
+  /** FR-002: presentation-only, so no unit state changes and no request is issued. */
+  setDisplayStyle(style: DisplayStyleId | string): void {
+    this.#renderer.setDisplayStyle(style);
   }
 
   /** Cost visibility (FR-028): what this session has actually sent, never a money figure (FR-029). */
