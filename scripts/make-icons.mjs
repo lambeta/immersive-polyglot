@@ -1,45 +1,25 @@
 #!/usr/bin/env node
 /**
- * Generates the extension's action/app icons from one vector design, so the 16/32/48/128 assets
- * cannot drift from each other or from the product's bilingual-preview look.
+ * Renders the extension's action/app icons from `src/icons/design.svg`, the single vector master.
+ * One source, four sizes, so the toolbar, the extensions page and the store listing cannot drift.
  *
- * Design: a rounded blue-to-teal tile holding two text lines; the lower line sits on a yellow
- * marker band exactly like the product's "marker" display style. It reads as "original + translated"
- * at 16px, where glyph-based marks turn to mush.
+ * The master is the dual-page mark designed for this product: a gold translation page peeking from
+ * behind an off-white reading page, with a dark source line and a gold marker line on the front.
  *
- * Requires a Playwright Chromium build (same one the e2e suite uses):
+ * Requires a Playwright Chromium build (the same one the e2e suite uses):
  *   PLAYWRIGHT_BROWSERS_PATH="$PWD/.playwright-browsers" npm run make:icons
  */
 import { chromium } from "@playwright/test";
-import { mkdir, stat } from "node:fs/promises";
+import { mkdir, readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-const OUT = fileURLToPath(new URL("../src/icons", import.meta.url));
+const ICONS = fileURLToPath(new URL("../src/icons", import.meta.url));
+const DESIGN = ICONS + "/design.svg";
 const SIZES = [16, 32, 48, 128];
 
-function iconSvg(size) {
-  // The viewBox is fixed; only the raster size changes.
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2b5bff"/>
-      <stop offset="1" stop-color="#0f9d8f"/>
-    </linearGradient>
-    <clipPath id="tile">
-      <rect x="4" y="4" width="120" height="120" rx="30"/>
-    </clipPath>
-  </defs>
-  <rect x="4" y="4" width="120" height="120" rx="30" fill="url(#bg)"/>
-  <g clip-path="url(#tile)">
-    <rect x="24" y="38" width="80" height="14" rx="7" fill="#ffffff"/>
-    <rect x="20" y="62" width="88" height="24" rx="5" fill="#ffd43b"/>
-    <rect x="28" y="67" width="64" height="14" rx="7" fill="#16324f"/>
-  </g>
-</svg>`;
-}
-
 async function main() {
-  await mkdir(OUT, { recursive: true });
+  const svg = await readFile(DESIGN, "utf8");
+  await mkdir(ICONS, { recursive: true });
   const browser = await chromium.launch({ headless: true });
   try {
     for (const size of SIZES) {
@@ -48,9 +28,10 @@ async function main() {
         deviceScaleFactor: 1,
       });
       await page.setContent(
-        "<style>html,body{margin:0;background:transparent}svg{display:block}</style>" + iconSvg(size),
+        "<style>html,body{margin:0;background:transparent}svg{display:block;width:100%;height:100%}</style>" +
+          svg,
       );
-      const path = OUT + "/icon-" + size + ".png";
+      const path = ICONS + "/icon-" + size + ".png";
       await page.screenshot({ path, omitBackground: true });
       await page.close();
       const info = await stat(path);

@@ -23,6 +23,12 @@ function pngSize(path: string): { width: number; height: number } {
 }
 
 describe("extension icons", () => {
+  it("keeps one vector master next to the rasters", () => {
+    const master = join(ROOT, "src/icons/design.svg");
+    expect(existsSync(master), master).toBe(true);
+    expect(readFileSync(master, "utf8")).toContain("<svg");
+  });
+
   it("declares an icon for the toolbar and for the manifest at every standard size", () => {
     for (const size of SIZES) {
       expect(MANIFEST.icons?.[String(size)], "icons." + size).toBe("icons/icon-" + size + ".png");
