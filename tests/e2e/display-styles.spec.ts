@@ -279,7 +279,13 @@ test("the Divider style paints a leading-edge rule and no horizontal decoration 
         fontStyle: style.fontStyle,
         height: rect.height,
         width: rect.width,
-        lineHeight: Number.parseFloat(style.lineHeight) || 0,
+        // Count the block's real line boxes rather than dividing its height: padding and the rule
+        // itself add height, so a height threshold cannot tell a one-line block from a wrapped one.
+        lineCount: (() => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return Array.from(range.getClientRects()).filter((line) => line.height > 0).length;
+        })(),
       };
     }),
   );
@@ -296,7 +302,8 @@ test("the Divider style paints a leading-edge rule and no horizontal decoration 
   }
   // At least one multi-line paragraph: the rule spans every line of the block, not one stub.
   expect(
-    metrics.some((metric) => metric.lineHeight > 0 && metric.height > metric.lineHeight * 2.5),
+    metrics.some((metric) => metric.lineCount >= 3),
+    JSON.stringify(metrics.map((metric) => ({ height: metric.height, lines: metric.lineCount }))),
   ).toBe(true);
 
   // The rule stays attached when the display mode changes, and no request is issued.
