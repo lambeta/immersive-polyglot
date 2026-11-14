@@ -4,21 +4,53 @@
       <rect width="1024" height="1024" rx="236" ry="236"/>
     </clipPath>
   </defs>
-  <!-- Dual-layer page (source behind / translation in front) + marker bar.
-       Flat vector; no system fonts. -->
+  <!-- European badger portrait.
+       Cream head = silhouette. Twin vertical espresso face-stripes (not raccoon
+       goggles). Honey midline blaze = brand highlighter. Gold page ledge under chin. -->
   <g clip-path="url(#tileClip)">
     <rect width="1024" height="1024" fill="#3E2418"/>
 
-    <!-- Back page: translation layer peeking (gold) — distinctive stepped silhouette -->
-    <rect x="292" y="268" width="500" height="560" rx="68" ry="68" fill="#E8A63C"/>
+    <!-- Page ledge (translation cue; continuous bar, not twin paws) -->
+    <rect x="188" y="760" width="648" height="100" rx="50" ry="50" fill="#E8A63C"/>
 
-    <!-- Front page: reading surface -->
-    <rect x="220" y="196" width="500" height="560" rx="68" ry="68" fill="#FBF2E4"/>
+    <!-- Ears — blunt cream caps -->
+    <ellipse cx="286" cy="228" rx="108" ry="124" fill="#FBF2E4"/>
+    <ellipse cx="738" cy="228" rx="108" ry="124" fill="#FBF2E4"/>
 
-    <!-- Source line -->
-    <rect x="300" y="360" width="260" height="108" rx="54" ry="54" fill="#3E2418"/>
+    <!-- Head -->
+    <ellipse cx="512" cy="460" rx="372" ry="318" fill="#FBF2E4"/>
 
-    <!-- In-place marker / translation highlight -->
-    <rect x="300" y="512" width="340" height="120" rx="60" ry="60" fill="#E8A63C"/>
+    <!-- Left face-stripe (nose-to-ear band, vertical, badger — not a round mask) -->
+    <path fill="#2A160F" d="
+      M300 250
+      C360 245 395 280 405 340
+      L425 520
+      C430 575 400 620 355 635
+      C295 655 245 610 235 545
+      L220 360
+      C215 295 250 255 300 250 Z"/>
+
+    <!-- Right face-stripe -->
+    <path fill="#2A160F" d="
+      M724 250
+      C664 245 629 280 619 340
+      L599 520
+      C594 575 624 620 669 635
+      C729 655 779 610 789 545
+      L804 360
+      C809 295 774 255 724 250 Z"/>
+
+    <!-- Honey blaze (highlighter through the white stripe) -->
+    <path fill="#E8A63C" d="
+      M512 155
+      C575 155 605 235 605 310
+      L588 640
+      C582 695 550 730 512 730
+      C474 730 442 695 436 640
+      L419 310
+      C419 235 449 155 512 155 Z"/>
+
+    <!-- Blunt muzzle tip / nose -->
+    <ellipse cx="512" cy="690" rx="54" ry="40" fill="#2A160F"/>
   </g>
 </svg>

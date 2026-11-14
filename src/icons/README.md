@@ -5,20 +5,23 @@ generated from it by `npm run make:icons`; never edit the PNGs by hand.
 
 ## The mark
 
-A honey translation page peeking from behind a warm cream reading page. On the front page, a dark
-espresso source line sits above a longer honey marker line: the product's "translation is placed on
-the page, and you can see where" idea in one silhouette. At 16px the eye reads espresso tile → cream
-page → honey stripe, with no thin strokes or letterforms to dissolve.
+A badger portrait: a cream head on an espresso tile, twin vertical dark face-stripes, and a honey
+blaze down the centre that is the product's "marker" accent built into the animal rather than added
+as a separate object. Under the chin, a single honey ledge is the page the badger is reading — the
+translation cue, kept as one continuous bar so it never reads as paws.
+
+Why a badger: it is the bookish, stubborn reader who works a foreign page until it yields. The
+chosen animal also avoids the crowded mascot shelf (Duolingo's owl, Papago's parrot, Firefox's fox).
 
 | Role | Colour |
 |---|---|
 | Tile | `#3E2418` (espresso) |
-| Page | `#FBF2E4` (warm cream) |
-| Source line | `#3E2418` |
-| Translation / marker | `#E8A63C` (honey) |
+| Head / cream mass | `#FBF2E4` (warm cream) |
+| Face stripes / nose | `#2A160F` (deep espresso) |
+| Blaze / page ledge | `#E8A63C` (honey) |
 
-The icon is flat vector with a single soft highlight; it is not derived from Immersive Translate's
-logo or any third-party mark, and it uses no system fonts.
+Flat vector, no letterforms, no system fonts. At 16px the silhouette is tile → pale head → honey
+stripe; the stripes survive as two dark bites and the chin ledge as a thin gold line.
 
 ## Regenerating
 
