@@ -18,6 +18,7 @@ await build({ mode: "extension" });
 // Files the manifest names directly must land at exactly those paths.
 cpSync(`${src}/manifest.json`, `${dist}/manifest.json`);
 cpSync(`${src}/_locales`, `${dist}/_locales`, { recursive: true });
+cpSync(`${src}/icons`, `${dist}/icons`, { recursive: true });
 mkdirSync(`${dist}/styles`, { recursive: true });
 cpSync(`${src}/styles/content.css`, `${dist}/styles/content.css`);
 cpSync(`${src}/styles/display-styles.css`, `${dist}/styles/display-styles.css`);

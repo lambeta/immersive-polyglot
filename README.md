@@ -46,6 +46,7 @@ npm run typecheck    # tsc --noEmit, strict
 npm test             # unit + DOM suites (Vitest)
 npm run test:e2e     # builds, then Playwright against real Chromium + a local stub provider
 npm run verify:styles # fifteen-style capture: distinctness, restore, contrast, layout, restyle time
+npm run make:icons   # regenerate src/icons/*.png from the single vector design
 ```
 
 The e2e suite needs a Playwright Chromium build. In an environment where the default browser cache
