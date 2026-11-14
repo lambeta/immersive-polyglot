@@ -514,5 +514,11 @@
   },
   "providerTestNeedsSave": {
     "message": "Save the provider before testing it."
+  },
+  "providerPresetDeepseek": {
+    "message": "Use DeepSeek defaults"
+  },
+  "providerPresetHint": {
+    "message": "Prefills the name, endpoint and model for DeepSeek. The credential is still yours to enter; every field stays editable and any OpenAI-compatible endpoint works."
   }
 }

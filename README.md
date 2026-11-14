@@ -10,6 +10,8 @@ travels only to the endpoint you configure; page text travels only there too.
 
 - **Bring-your-own-provider.** Any OpenAI-compatible chat-completions endpoint: a hosted model, a
   local server, or a gateway you already pay for. Add it in the options page, test it, and use it.
+  A fresh profile is pre-filled with DeepSeek's endpoint and model as a convenience; the preset only
+  fills the fields, the credential is still yours to enter, and any endpoint works.
 - **Bilingual reading.** Each paragraph gets its translation as an adjacent block, with the display
   mode you choose (translation below, above, or instead of the original).
 - **Restore exactly.** Turning translation off replays a write journal, so the page returns to its
@@ -50,6 +52,24 @@ npm run test:e2e:local
 ```
 
 Load `dist/` via `chrome://extensions` → *Developer mode* → *Load unpacked*.
+
+To try it without any API key, run the local dev provider and point the extension at it:
+
+```bash
+npm run dev:provider        # http://127.0.0.1:8787, translate with model "dev-model"
+```
+
+Then use endpoint `http://127.0.0.1:8787/v1/chat/completions`, model `dev-model`, any credential,
+and open `http://127.0.0.1:8787/` for the fixture pages. Its translations are prefixed
+`【本地测试】` so they are never mistaken for real output.
+
+To verify one real provider end to end (tasks T090), put the key in a git-ignored file and run the
+harness — it never prints the key and makes one small real translation:
+
+```bash
+printf 'DEEPSEEK_API_KEY=sk-...' > .env.local
+npm run verify:real-provider
+```
 
 ## Rendering verification (SC-011)
 

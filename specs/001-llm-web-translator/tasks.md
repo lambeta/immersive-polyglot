@@ -340,8 +340,8 @@ real external product; neither was marked done on the strength of a stand-in.
 | Gate | Command | Result |
 |---|---|---|
 | Types | `npm run typecheck` | clean (strict, `noUncheckedIndexedAccess`) |
-| Unit + DOM | `npm test` | 19 files, **237 tests passed**, no skips |
-| End-to-end | `npm run test:e2e` | real Chromium, unpacked extension, real `chrome.storage`, real HTTP to the stub provider — **27 tests** across smoke, US1–US5, privacy, failure handling, accessibility and RTL |
+| Unit + DOM | `npm test` | 20 files, **241 tests passed**, no skips |
+| End-to-end | `npm run test:e2e` | real Chromium, unpacked extension, real `chrome.storage`, real HTTP to the stub provider — **29 tests** across smoke, US1–US5, privacy, failure handling, accessibility and RTL |
 | Build | `npm run build` | `dist/` loadable unpacked; content script is a classic IIFE, worker and pages are ES modules |
 | Rendering harness | `npm run verify:rendering -- --include-example` | PASS on the synthetic example; the default run reports BLOCKED (exit 2) while T010 is open |
 | Dependencies | `npm ls --omit=dev` | empty: **zero runtime dependencies**; every dev dependency pinned, lockfile committed |
@@ -370,6 +370,11 @@ real external product; neither was marked done on the strength of a stand-in.
 7. **Performance is asserted where it is measurable in-process**: segmentation of a 5,000-node page
    under 150 ms (unit test). The 50 ms main-thread and 60 fps goals are not asserted automatically;
    they need a profiled browser run.
+9. **One first-run provider prefill was added at the owner's request**: DeepSeek's endpoint and
+   model are pre-filled on a fresh profile, with a button to re-apply them. It is a prefill, not a
+   built-in provider list — the credential stays blank, every field is editable, and any
+   OpenAI-compatible endpoint works (contract note in `contracts/provider-adapter.md` §1,
+   unit-tested in `tests/unit/presets.test.ts`).
 8. **Playwright Chromium is installed inside the workspace** (`.playwright-browsers/`, git-ignored)
    because the default browser cache is not writable in this environment. `npm run test:e2e:local`
    carries the path.

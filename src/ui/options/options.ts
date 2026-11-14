@@ -4,6 +4,7 @@ import { CredentialField } from "../shared/credential-field.js";
 import { createSettingsStore, defaultSettings } from "../../shared/settings.js";
 import { deleteProviderCascade, saveProvider } from "../../shared/providers.js";
 import { addEntry } from "../../shared/glossary.js";
+import { DEEPSEEK_PRESET } from "./presets.js";
 import {
   validateGlossaryEntry,
   validateLanguageCode,
@@ -166,6 +167,18 @@ function resetProviderForm(): void {
   credentialField.clear();
   qs<HTMLButtonElement>(document, "#provider-cancel").hidden = true;
   clearErrors(qs<HTMLElement>(document, "#provider-form"));
+}
+
+/**
+ * Applies the DeepSeek prefill. Only the three identification fields are touched: the credential
+ * is never prefilled, because the user must enter their own and must have acknowledged the
+ * disclosure before they can (FR-021, FR-023).
+ */
+function applyPreset(): void {
+  setValue("provider-name", DEEPSEEK_PRESET.draft.name);
+  setValue("provider-endpoint", DEEPSEEK_PRESET.draft.endpoint);
+  setValue("provider-model", DEEPSEEK_PRESET.draft.model);
+  qs<HTMLInputElement>(document, "#provider-credential").focus();
 }
 
 function parseHeaders(raw: string): Record<string, string> {
@@ -637,6 +650,7 @@ function wireForms(): void {
   });
   qs<HTMLButtonElement>(document, "#provider-test").addEventListener("click", () => void testConnection());
   qs<HTMLButtonElement>(document, "#provider-cancel").addEventListener("click", () => resetProviderForm());
+  qs<HTMLButtonElement>(document, "#provider-preset").addEventListener("click", () => applyPreset());
 
   qs<HTMLElement>(document, "#provider-list").addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
@@ -777,6 +791,10 @@ async function boot(): Promise<void> {
   wireTabs();
   wireForms();
   await renderAll();
+
+  // A fresh profile starts on the product's expected default provider (DeepSeek), with the
+  // credential still blank. The user can overwrite any field or pick another endpoint entirely.
+  if (settings.providers.length === 0 && editingProviderId === null) applyPreset();
 }
 
 void boot();

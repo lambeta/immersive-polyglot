@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "test:e2e": "npm run build && playwright test",
     "verify:rendering": "node scripts/verify-rendering.mjs",
-    "test:e2e:local": "PLAYWRIGHT_BROWSERS_PATH=$PWD/.playwright-browsers playwright test"
+    "test:e2e:local": "PLAYWRIGHT_BROWSERS_PATH=$PWD/.playwright-browsers playwright test",
+    "dev:provider": "node scripts/dev-provider.mjs",
+    "verify:real-provider": "node scripts/verify-real-provider.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.48.2",

@@ -20,6 +20,13 @@ is classified. Implements FR-001..FR-004, FR-026..FR-029, and the privacy constr
 
 There is no built-in provider list: any reachable endpoint works, which is what FR-002 demands.
 
+**Change record (2026-11-14, requested by the product owner).** The options page now pre-fills one
+convenience preset on a fresh profile and offers a button to re-apply it: DeepSeek
+(`https://api.deepseek.com/chat/completions`, model `deepseek-chat`). This is a prefill, not a
+dependency: it sets the name, endpoint and model, leaves the credential blank, keeps every field
+editable, and nothing in the request path references the preset module. FR-002 still holds —
+a provider the user can reach with their own credential is usable, preset or not.
+
 ---
 
 ## 2. What the product sends
