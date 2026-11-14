@@ -79,18 +79,6 @@ function drawMark(doc: Document, icon: DisplayStyleIcon, unique: string): SVGEle
       marks.push(rect);
       break;
     }
-    case "rule":
-      marks.push(
-        svgElement(doc, "line", {
-          x1: 2,
-          y1: 2.4,
-          x2: 22,
-          y2: 2.4,
-          stroke,
-          "stroke-width": 1.6,
-        }),
-      );
-      break;
     case "fill":
       marks.push(
         svgElement(doc, "rect", {
@@ -127,9 +115,25 @@ function drawMark(doc: Document, icon: DisplayStyleIcon, unique: string): SVGEle
       );
       break;
     case "bar":
-      marks.push(
-        svgElement(doc, "rect", { x: 2.4, y: 1.6, width: 2.6, height: 12.8, rx: 1, fill: stroke }),
-      );
+      // Quote draws a solid 2.6-wide bar. Divider is the same leading edge with half the weight and
+      // a dash rhythm, so the two are told apart by stroke, never by position (feature 004, FR-007).
+      if (dash) {
+        marks.push(
+          svgElement(doc, "line", {
+            x1: 2.4,
+            y1: 1.6,
+            x2: 2.4,
+            y2: 14.4,
+            stroke,
+            "stroke-width": 1.2,
+            "stroke-dasharray": dash,
+          }),
+        );
+      } else {
+        marks.push(
+          svgElement(doc, "rect", { x: 2.4, y: 1.6, width: 2.6, height: 12.8, rx: 1, fill: stroke }),
+        );
+      }
       break;
     case "blur":
       marks.push(

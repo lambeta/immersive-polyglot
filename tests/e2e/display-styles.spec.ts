@@ -252,3 +252,64 @@ test("a style chosen in the page control applies to this site only (FR-019)", as
     "highlight",
   );
 });
+test("the Divider style paints a leading-edge rule and no horizontal decoration (FR-001, FR-002)", async () => {
+  await seedProvider();
+  const pageUrl = pageUrlFor("news-article-a.html");
+  const page = await translate(pageUrl);
+  const requestsBefore = stub.requests.length;
+
+  await sendToTab(extension, pageUrl, { type: "setDisplayStyle", style: "divider" });
+  await page.waitForFunction(() => {
+    const targets = Array.from(document.querySelectorAll('[data-ipt="target"]'));
+    return (
+      targets.length > 0 &&
+      targets.every((target) => target.getAttribute("data-ipt-style") === "divider")
+    );
+  });
+
+  const metrics = await page.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLElement>('[data-ipt="target"]')).map((element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return {
+        inlineStartWidth: Number.parseFloat(style.borderInlineStartWidth || "0"),
+        inlineStartStyle: style.borderInlineStartStyle,
+        blockStartWidth: Number.parseFloat(style.borderBlockStartWidth || "0"),
+        blockEndWidth: Number.parseFloat(style.borderBlockEndWidth || "0"),
+        fontStyle: style.fontStyle,
+        height: rect.height,
+        width: rect.width,
+        lineHeight: Number.parseFloat(style.lineHeight) || 0,
+      };
+    }),
+  );
+
+  expect(metrics.length).toBeGreaterThanOrEqual(3);
+  for (const metric of metrics) {
+    expect(metric.inlineStartStyle).toBe("dashed");
+    expect(metric.inlineStartWidth).toBeGreaterThan(0);
+    expect(metric.inlineStartWidth).toBeLessThanOrEqual(2);
+    expect(metric.blockStartWidth).toBe(0);
+    expect(metric.blockEndWidth).toBe(0);
+    expect(metric.fontStyle).not.toBe("italic");
+    expect(metric.width).toBeGreaterThan(metric.inlineStartWidth);
+  }
+  // At least one multi-line paragraph: the rule spans every line of the block, not one stub.
+  expect(
+    metrics.some((metric) => metric.lineHeight > 0 && metric.height > metric.lineHeight * 2.5),
+  ).toBe(true);
+
+  // The rule stays attached when the display mode changes, and no request is issued.
+  for (const mode of ["above", "only"] as const) {
+    await sendToTab(extension, pageUrl, { type: "setDisplayMode", mode });
+    await expect
+      .poll(() =>
+        page
+          .locator('[data-ipt="target"]')
+          .first()
+          .evaluate((element) => getComputedStyle(element as HTMLElement).borderInlineStartStyle),
+      )
+      .toBe("dashed");
+  }
+  expect(stub.requests.length).toBe(requestsBefore);
+});

@@ -46,8 +46,8 @@
 /* --- rules and marks ------------------------------------------------------- */
 
 [data-ipt-style="divider"] {
-  border-block-start: 1px solid currentColor;
-  padding-block-start: 0.4em;
+  border-inline-start: 1px dashed currentColor;
+  padding-inline-start: 0.55em;
 }
 
 [data-ipt-style="highlight"] {

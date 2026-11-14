@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tests as data</title>
+    <!--
+      Verbatim capture for the SC-001 regression fixture, taken 2026-11-14 from
+      https://martinfowler.com/articles/tests-as-data.html
+      Scope: article front matter (title, subtitle, abstract, date, author, tags, contents)
+      plus the Introduction heading and its first two paragraphs.
+      Third-party scripts and site chrome are removed; the captured text is not edited.
+    -->
+    <style>
+      body { margin: 0 auto; max-width: 46rem; padding: 1.5rem; font: 16px/1.55 Georgia, serif; color: #1b1b1b; background: #fff; }
+      main { margin-top: 1.5rem; }
+      h1 { font-size: 1.9rem; line-height: 1.2; }
+      h2 { font-size: 1.3rem; margin-top: 1.8rem; }
+      .subtitle { font-size: 1.15rem; color: #444; margin-top: 0; }
+      p.abstract { font-size: 1.02rem; color: #222; background: #fafafa; border-left: 3px solid #ccc; padding: .6rem .9rem; }
+      .front-grid { display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; border-top: 1px solid #ddd; padding-top: 1rem; margin-top: 1rem; }
+      .contents ul { padding-left: 1.1rem; }
+      .tags ul { list-style: none; padding: 0; }
+      address.name { font-style: normal; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <main>
+<main>
+<h1>Tests as data</h1>
+
+<p class = 'subtitle'>Ensuring AI-generated code does what we want</p>
+
+<section class = 'frontMatter'>
+<p class = 'abstract'><i>
+
+    Automated testing in the age of AI coding assistants is problematic: when AI agents write both production and test code, developers risk losing the assurance that automated tests protect against functional errors. I make three claims: (1) when AI writes the code, developers become its customers; (2) therefore customer tests, not developer tests, become the primary contract between humans and AI; (3) moving that contract into test data rather than test code makes it easier to protect it from unexpected modifications by coding agents. All of this optimizes for human-readable tests that establish a contract between humans and AI.  While in the past DSL parsers and custom test runners were expensive to write and maintain, now AI makes them cheap. I build on established practices: customer-oriented acceptance tests from Extreme Programming, test DSLs from Fit and specification by example, tabular tests from Go, and readable textual representations of application state from approval testing.
+
+  </i></p>
+
+<p class = 'date'>11 November 2026</p>
+
+<hr style = 'clear: both'></hr>
+
+<div class = 'front-grid'>
+<div class = 'author-list'>
+<div class = 'author'>
+<div class = 'photo'><a href = 'https://matteo.vaccari.name/'><img alt = 'Photo of Matteo Vaccari' src = 'tests-as-data/matteo.png' width = '80'></img></a></div>
+
+<address class = 'name'><a href = 'https://matteo.vaccari.name/' rel = 'author'>Matteo Vaccari</a></address>
+
+<div class = 'bio'>
+<p>Matteo is a developer and Technical Principal with Thoughtworks Italia.
+        He likes it when Extreme Programming helps make teams and businesses successful.</p>
+</div>
+</div>
+</div>
+
+<div class = 'tags'>
+<p class = 'tag-link'><a href = /tags/testing.html>testing</a></p>
+
+<p class = 'tag-link'><a href = /tags/generative%20AI.html>generative AI</a></p>
+</div>
+
+<div class = 'contents'>
+<h2>Contents</h2>
+
+<ul>
+<li><a href = '#Introduction'>Introduction</a>
+<ul>
+<li><a href = '#ProblemsWithAi-generatedCode'>Problems with AI-generated code</a></li>
+
+<li><a href = '#ProblemsWithAi-generatedTests'>Problems with AI-generated tests</a></li>
+
+<li><a href = '#ProblemsWithAi-generatedSpecs'>Problems with AI-generated specs</a></li>
+
+<li><a href = '#WhatIAmProposing'>What I am proposing</a></li>
+</ul>
+</li>
+
+<li><a href = '#CoreTechniques'>Core techniques</a>
+<ul>
+<li><a href = '#CustomerTests'>Customer tests</a></li>
+
+<li><a href = '#FocusOnWhatMatters'>Focus on what matters</a></li>
+
+<li><a href = '#NotAllTestsCanFitInTables'>Not all tests can fit in tables</a></li>
+</ul>
+</li>
+
+<li><a href = '#BuildingOnExistingTraditions'>Building on existing traditions</a>
+<ul>
+<li><a href = '#not-new'>Fit and specification by example</a></li>
+
+<li><a href = '#TestingPracticesInGo'>Testing practices in Go</a></li>
+
+<li><a href = '#ApprovalTesting'>Approval testing</a></li>
+
+<li><a href = '#ApprovedScenariosAndApprovedLogs'>Approved Scenarios and Approved Logs</a></li>
+</ul>
+</li>
+
+<li><a href = '#ImplementationHints'>Implementation hints</a>
+<ul>
+<li><a href = '#NotAlwaysEnd-to-end'>Not always end-to-end</a></li>
+
+<li><a href = '#CustomerTestsForTheUi'>Customer tests for the UI</a></li>
+
+<li><a href = '#DealingWithExternalSystems'>Dealing with external systems</a></li>
+
+<li><a href = '#ProtectingTheTestHarness'>Protecting the test harness</a></li>
+
+<li><a href = '#ValidatingTheTests'>Validating the tests</a></li>
+
+<li><a href = '#BeyondExample-basedTests'>Beyond example-based tests</a></li>
+</ul>
+</li>
+
+<li><a href = '#LimitsOfApplicability'>Limits of applicability</a></li>
+
+<li><a href = '#Conclusion'>Conclusion</a></li>
+</ul>
+
+<h3>Sidebars</h3>
+
+<ul>
+<li><a href = '#TestTablesOverOne-offScenarios'>Test tables over one-off scenarios</a></li>
+
+<li><a href = '#TablesSaveTheDay'>Tables save the day</a></li>
+
+<li><a href = '#InternalResourcesAndSideChannels'>Internal resources and side channels</a></li>
+
+<li><a href = '#IsntThisJustGherkinAndCucumber'>Isn't this just Gherkin and Cucumber?</a></li>
+
+<li><a href = '#InternalDsls'>Internal DSLs</a></li>
+</ul>
+</div>
+</div>
+<hr></hr></section>
+
+<h2>Introduction</h2>
+
+<section id = 'ProblemsWithAi-generatedCode'>
+<h3>Problems with AI-generated code</h3>
+
+<p>In early 2026, I conducted interviews with 26 developers working for
+        an organization that was heavily invested in developing with AI coding
+        agents. One of my questions was &#x201C;do you trust our tests?&#x201D; After all, the
+        developers were from Thoughtworks, and Thoughtworks prides itself on the
+        quality and thoroughness of our testing. Unfortunately, the developers
+        invariably answered &#x201C;<i>Well&#x2026; I don&#x2019;t trust our tests that much! Because
+        even if I review the tests when they are initially generated, as new
+        features get added, the AI refactors both existing code and existing
+        tests, so I&#x2019;m no longer confident that the tests are still ensuring the
+        right behaviour&#x201D;</i>. </p>
+
+<p>This got me thinking. As we learn to get more work done from coding
+        agents, it&#x2019;s becoming natural that AI writes most, if not all the tests.
+        </p>
+    </main>
+  </body>
+</html>

@@ -15,6 +15,8 @@ export interface SegmentOptions {
 export interface SegmentDuplicate {
   unitId: string;
   ofUnitId: string;
+  /** 0-based position this occurrence stands in for within its own source block. */
+  partIndex: number;
   element: Element;
 }
 
@@ -392,6 +394,7 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
     element: Element,
     text: string,
     state: "queued" | "skipped",
+    partIndex: number,
     reason?: SkipReason,
   ): string => {
     const id = idFor(text);
@@ -402,6 +405,7 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
       targetLang,
       state,
       attempts: 0,
+      partIndex,
       domRef: element,
     };
     if (reason !== undefined) unit.skipReason = reason;
@@ -409,8 +413,13 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
     return id;
   };
 
-  const pushDuplicate = (element: Element, text: string, ofUnitId: string): void => {
-    duplicates.push({ unitId: idFor(text), ofUnitId, element });
+  const pushDuplicate = (
+    element: Element,
+    text: string,
+    ofUnitId: string,
+    partIndex: number,
+  ): void => {
+    duplicates.push({ unitId: idFor(text), ofUnitId, partIndex, element });
   };
 
   const pushSkipped = (element: Element, text: string, reason: SkipReason): void => {
@@ -419,19 +428,19 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
     if (text.length === 0) return;
     const first = firstSkipped.get(text);
     if (first !== undefined) {
-      pushDuplicate(element, text, first);
+      pushDuplicate(element, text, first, 0);
       return;
     }
-    firstSkipped.set(text, pushUnit(element, text, "skipped", reason));
+    firstSkipped.set(text, pushUnit(element, text, "skipped", 0, reason));
   };
 
-  const pushQueued = (element: Element, text: string): void => {
+  const pushQueued = (element: Element, text: string, partIndex: number): void => {
     const first = firstQueued.get(text);
     if (first !== undefined) {
-      pushDuplicate(element, text, first);
+      pushDuplicate(element, text, first, partIndex);
       return;
     }
-    firstQueued.set(text, pushUnit(element, text, "queued"));
+    firstQueued.set(text, pushUnit(element, text, "queued", partIndex));
     if (sampledChars < PAGE_SAMPLE_CHARS) {
       samples.push(text.slice(0, 200));
       sampledChars += text.length;
@@ -467,7 +476,11 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
       pushSkipped(element, text, "sameLanguage");
       continue;
     }
-    for (const chunk of splitForUnits(text)) pushQueued(element, chunk);
+    const chunks = splitForUnits(text);
+    for (let partIndex = 0; partIndex < chunks.length; partIndex += 1) {
+      const chunk = chunks[partIndex];
+      if (chunk !== undefined) pushQueued(element, chunk, partIndex);
+    }
   }
 
   const detectedSample = detectLanguage(samples.join(" "));

@@ -102,6 +102,22 @@ describe("bilingual placement", () => {
     expect(body.querySelectorAll("[data-ipt='target']")).toHaveLength(1);
     expect(body.querySelector("[data-ipt='target']")?.textContent).toBe("second");
   });
+
+  it("updates one container in place as a block gains more parts", () => {
+    const { body, renderer } = setup("<article><p id='p1'>Hello</p></article>");
+    const source = body.querySelector("#p1") as HTMLElement;
+    const first = renderer.renderUnit({ id: "part-0" }, "第一", source);
+    const second = renderer.renderUnit({ id: "part-1" }, "第一 第二", source);
+
+    expect(second === first).toBe(true);
+    expect(first.isConnected).toBe(true);
+    expect(body.querySelectorAll("[data-ipt='target']")).toHaveLength(1);
+    expect(first.textContent).toBe("第一 第二");
+    expect(first.getAttribute("data-ipt-style")).toBe("none");
+    expect(first.getAttribute("lang")).toBe("zh");
+    expect(renderer.renderedElement(source)).toBe(first);
+    expect(first.isConnected).toBe(true);
+  });
 });
 
 describe("display modes", () => {
@@ -147,5 +163,49 @@ describe("display modes", () => {
     renderer.setDisplayMode("bilingual");
     expect(source.hasAttribute("hidden")).toBe(false);
     expect(source.nextElementSibling).toBe(target);
+  });
+});
+describe("target-language direction (feature 004)", () => {
+  it("marks an RTL target with dir=rtl and leaves an LTR translation unmarked", () => {
+    const { body, renderer } = setup("<article><p id='p1'>Hello</p><p id='p2'>Next</p></article>");
+    const rtlSource = body.querySelector("#p1") as HTMLElement;
+    const rtl = renderer.renderUnit({ id: "rtl-1", targetLang: "ar" }, "نص", rtlSource);
+    expect(rtl.getAttribute("dir")).toBe("rtl");
+
+    const ltrSource = body.querySelector("#p2") as HTMLElement;
+    const ltr = renderer.renderUnit({ id: "ltr-1", targetLang: "zh" }, "你好", ltrSource);
+    expect(ltr.hasAttribute("dir")).toBe(false);
+  });
+
+  it("updates and removes dir when the target language changes", () => {
+    const { body, renderer } = setup("<article><p id='p1'>Hello</p></article>");
+    const source = body.querySelector("#p1") as HTMLElement;
+    const target = renderer.renderUnit({ id: "a" }, "你好", source);
+    expect(target.hasAttribute("dir")).toBe(false);
+
+    renderer.setTargetLang("he");
+    expect(target.getAttribute("dir")).toBe("rtl");
+    renderer.setTargetLang("en");
+    expect(target.hasAttribute("dir")).toBe(false);
+  });
+
+  it("journals dir once, so repeated language changes do not grow the journal", () => {
+    const { body, renderer, journal } = setup("<article><p id='p1'>Hello</p></article>");
+    const source = body.querySelector("#p1") as HTMLElement;
+    renderer.renderUnit({ id: "a", targetLang: "ar" }, "نص", source);
+    const size = journal.size;
+
+    renderer.setTargetLang("fa");
+    renderer.setTargetLang("ar");
+    expect(journal.size).toBe(size);
+  });
+
+  it("never puts the direction attribute on the page-authored source", () => {
+    const { body, renderer } = setup("<article><p id='p1'>Hello</p></article>");
+    const source = body.querySelector("#p1") as HTMLElement;
+    const target = renderer.renderUnit({ id: "a", targetLang: "ar" }, "نص", source);
+    expect(target.getAttribute("dir")).toBe("rtl");
+    expect(source.hasAttribute("dir")).toBe(false);
+    expect(source.getAttribute("dir")).toBeNull();
   });
 });

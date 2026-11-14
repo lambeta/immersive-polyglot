@@ -252,3 +252,31 @@ describe("restoration with styles (FR-015, SC-004)", () => {
     expect(body.querySelectorAll("[data-ipt='target']")).toHaveLength(1);
   });
 });
+describe("divider decoration (feature 004)", () => {
+  it("marks the container without restyling the translation text", () => {
+    const { body, renderer } = setup(ARTICLE, "bilingual", "divider");
+    const source = body.querySelector("#p1") as HTMLElement;
+    const target = renderer.renderUnit(unit, "你好", source);
+
+    expect(target.getAttribute("data-ipt-style")).toBe("divider");
+    expect(target.textContent).toBe("你好");
+    expect(target.getAttribute("lang")).toBe("zh");
+    // Divider owns the rule through the stylesheet; it must not turn the text italic or
+    // add a text decoration of its own (that is Quote's and the underlines' job).
+    expect(target.style.fontStyle).toBe("");
+    expect(target.style.textDecoration).toBe("");
+    expect(target.style.getPropertyValue("border-inline-start")).toBe("");
+    expect(source.textContent).toBe("Hello");
+    expect(source.getAttribute("data-ipt")).toBe("source");
+  });
+
+  it("switches into and out of divider without growing the journal (FR-008)", () => {
+    const { body, renderer, journal } = setup(ARTICLE, "bilingual", "divider");
+    const source = body.querySelector("#p1") as HTMLElement;
+    renderer.renderUnit(unit, "你好", source);
+    const size = journal.size;
+    renderer.setDisplayStyle("marker");
+    renderer.setDisplayStyle("divider");
+    expect(journal.size).toBe(size);
+  });
+});

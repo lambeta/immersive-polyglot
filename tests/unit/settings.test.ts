@@ -4,6 +4,7 @@ import {
   SettingsError,
   SettingsStore,
   defaultSettings,
+  resolveTypography,
   type Migration,
 } from "../../src/shared/settings.js";
 import { MemoryStorageArea } from "../support/memory-storage.js";
@@ -220,5 +221,66 @@ describe("delete all data (FR-024)", () => {
     const loaded = await store(area).load();
     expect(loaded.ui.displayStyle).toBe("none");
     expect(loaded.sites).toEqual([]);
+  });
+});
+describe("translation typography resolution (feature 004)", () => {
+  it("resolves the defaults when the profile never stored typography", async () => {
+    const area = new MemoryStorageArea({ schemaVersion: CURRENT_SCHEMA_VERSION, providers: [] });
+    const loaded = await store(area).load();
+    expect(resolveTypography(loaded)).toEqual({ fontFamily: "", fontScale: 100 });
+    expect(loaded.ui.translationFontFamily).toBe("");
+    expect(loaded.ui.translationFontScale).toBe(100);
+  });
+
+  it("resolves a valid stored family and scale unchanged", async () => {
+    const area = new MemoryStorageArea({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      ui: { translationFontFamily: '"Source Han Serif SC", serif', translationFontScale: 125 },
+    });
+    const loaded = await store(area).load();
+    expect(resolveTypography(loaded)).toEqual({
+      fontFamily: '"Source Han Serif SC", serif',
+      fontScale: 125,
+    });
+  });
+
+  it("rounds and clamps a scale, and drops a refused family, without failing the load", async () => {
+    for (const [stored, expected] of [
+      [101, 100],
+      [149, 150],
+      [49, 50],
+      [240, 200],
+      [Number.NaN, 100],
+    ] as const) {
+      const area = new MemoryStorageArea({
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        ui: { translationFontScale: stored },
+      });
+      const loaded = await store(area).load();
+      expect(resolveTypography(loaded).fontScale, String(stored)).toBe(expected);
+    }
+
+    const area = new MemoryStorageArea({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      ui: { translationFontFamily: "Arial; color: red", translationFontScale: "big" },
+    });
+    const loaded = await store(area).load();
+    expect(resolveTypography(loaded)).toEqual({ fontFamily: "", fontScale: 100 });
+  });
+
+  it("persists typography across a reload without bumping the schema", async () => {
+    const area = new MemoryStorageArea({ schemaVersion: CURRENT_SCHEMA_VERSION });
+    const settingsStore = store(area);
+    await settingsStore.load();
+    await settingsStore.save((current) => {
+      current.ui.translationFontFamily = "Georgia, serif";
+      current.ui.translationFontScale = 130;
+      return current;
+    });
+
+    const reloaded = await store(area).load();
+    expect(resolveTypography(reloaded)).toEqual({ fontFamily: "Georgia, serif", fontScale: 130 });
+    expect(reloaded.schemaVersion).toBe(2);
+    expect((await area.get(["schemaVersion"]))["schemaVersion"]).toBe(2);
   });
 });

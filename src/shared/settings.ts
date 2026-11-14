@@ -7,10 +7,12 @@ import type {
   SitePreference,
   StyleSettings,
   TranslationProvider,
+  TranslationTypography,
   UiSettings,
 } from "./types.js";
 import { isDisplayStyleId } from "./display-styles.js";
 import { MIGRATIONS } from "./migrations.js";
+import { validateFontFamily } from "./validation.js";
 
 /**
  * Persisted configuration access. Implements contracts/storage-schema.md: defaults, the
@@ -79,7 +81,14 @@ export function defaultSettings(): Settings {
     glossary: [],
     style: { instruction: "", temperature: 0 },
     limits: { maxConcurrency: 3, sessionCapSegments: 0, sessionCapChars: 0, siteCaps: {} },
-    ui: { targetLang: "zh", sourceLang: "auto", displayMode: "bilingual", displayStyle: "none" },
+    ui: {
+      targetLang: "zh",
+      sourceLang: "auto",
+      displayMode: "bilingual",
+      displayStyle: "none",
+      translationFontFamily: "",
+      translationFontScale: 100,
+    },
   };
 }
 
@@ -176,6 +185,8 @@ function mergeDefaults(stored: Record<string, unknown>): Settings {
           displayStyle: isDisplayStyleId(stored["ui"]["displayStyle"])
             ? stored["ui"]["displayStyle"]
             : "none",
+          translationFontFamily: normaliseFontFamily(stored["ui"]["translationFontFamily"]),
+          translationFontScale: normaliseFontScale(stored["ui"]["translationFontScale"]),
         }
       : base.ui,
   };
@@ -304,6 +315,28 @@ export class SettingsStore {
       return Object.keys(remaining);
     });
   }
+}
+
+/**
+ * Feature 004: the device-wide translation typography, made safe to consume. A hand-edited or
+ * newer profile resolves to the defaults instead of breaking a render (FR-009, FR-012, FR-020).
+ */
+function normaliseFontFamily(value: unknown): string {
+  if (typeof value !== "string" || validateFontFamily(value) !== null) return "";
+  return value.trim();
+}
+
+function normaliseFontScale(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 100;
+  const rounded = Math.round(value / 5) * 5;
+  return Math.min(200, Math.max(50, rounded));
+}
+
+export function resolveTypography(settings: Settings): TranslationTypography {
+  return {
+    fontFamily: normaliseFontFamily(settings.ui.translationFontFamily),
+    fontScale: normaliseFontScale(settings.ui.translationFontScale),
+  };
 }
 
 /** The real backend. Only extension contexts have chrome.storage; tests inject their own area. */

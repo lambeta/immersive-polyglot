@@ -50,3 +50,35 @@ describe("style preview icons (FR-007, FR-008, FR-010)", () => {
     expect(icon.querySelectorAll("rect").length).toBeGreaterThan(2);
   });
 });
+describe("divider preview icon (feature 004)", () => {
+  it("draws a thin dashed vertical stroke, not a horizontal rule", () => {
+    const icon = previewIcon("divider", document);
+    const lines = Array.from(icon.querySelectorAll("line"));
+    const dashed = lines.find((line) => line.getAttribute("stroke-dasharray"));
+    expect(dashed).toBeTruthy();
+    expect(dashed?.getAttribute("stroke-dasharray")).toBe("3 2");
+
+    const x1 = Number(dashed?.getAttribute("x1"));
+    const x2 = Number(dashed?.getAttribute("x2"));
+    const y1 = Number(dashed?.getAttribute("y1"));
+    const y2 = Number(dashed?.getAttribute("y2"));
+    expect(Math.abs(y2 - y1)).toBeGreaterThan(Math.abs(x2 - x1));
+
+    for (const line of lines) {
+      const dx = Math.abs(Number(line.getAttribute("x2")) - Number(line.getAttribute("x1")));
+      const dy = Math.abs(Number(line.getAttribute("y2")) - Number(line.getAttribute("y1")));
+      expect(dx, "no horizontal line in the divider icon").toBeLessThan(dy);
+    }
+  });
+
+  it("is thinner than the quote bar it must be distinguished from", () => {
+    const divider = previewIcon("divider", document);
+    const quote = previewIcon("quote", document);
+    const dividerStroke = Number(
+      divider.querySelector("line[stroke-dasharray]")?.getAttribute("stroke-width") ?? "0",
+    );
+    const quoteBarWidth = Number(quote.querySelector("rect[fill='currentColor']")?.getAttribute("width") ?? "0");
+    expect(dividerStroke).toBeGreaterThan(0);
+    expect(dividerStroke).toBeLessThanOrEqual(quoteBarWidth / 2);
+  });
+});

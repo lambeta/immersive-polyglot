@@ -2,6 +2,7 @@ import type {
   GlossaryEntry,
   RoutingRule,
   TranslationProvider,
+  TranslationTypography,
 } from "./types.js";
 
 /**
@@ -64,6 +65,67 @@ export function validateLanguageCode(code: string, field = "lang"): ValidationIs
     return { field, messageKey: "commonInvalidLang" };
   }
   return null;
+}
+
+/**
+ * Feature 004: the translation typography inputs. The font-family value reaches an inline
+ * declaration the product owns, so it is allow-listed rather than block-listed (FR-017); the size
+ * must be a whole 5% step inside 50-200 (FR-018).
+ */
+
+export const FONT_FAMILY_MAX = 200;
+export const FONT_SCALE_MIN = 50;
+export const FONT_SCALE_MAX = 200;
+export const FONT_SCALE_STEP = 5;
+
+const FONT_FORBIDDEN = /[;{}<>!@\\\u0000-\u001f\u007f-\u009f]/;
+const FONT_UNQUOTED = /^[\p{L}_-][\p{L}\p{N} _.-]*$/u;
+
+function isFontFamilyEntry(entry: string): boolean {
+  const quote = entry.charAt(0);
+  if (quote === '"' || quote === "'") {
+    if (entry.length < 2 || entry.charAt(entry.length - 1) !== quote) return false;
+    const inner = entry.slice(1, -1);
+    if (inner.length === 0) return false;
+    if (inner.includes(quote) || inner.includes("\\")) return false;
+    return !FONT_FORBIDDEN.test(inner);
+  }
+  return FONT_UNQUOTED.test(entry);
+}
+
+export function validateFontFamily(value: string): ValidationIssue | null {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  const issue: ValidationIssue = { field: "fontFamily", messageKey: "displayFontInvalid" };
+  if (trimmed.length > FONT_FAMILY_MAX) return issue;
+  if (FONT_FORBIDDEN.test(trimmed)) return issue;
+  if (/url\(/i.test(trimmed)) return issue;
+
+  let entries = 0;
+  for (const raw of trimmed.split(",")) {
+    const entry = raw.trim();
+    if (entry.length === 0) continue;
+    if (!isFontFamilyEntry(entry)) return issue;
+    entries += 1;
+  }
+  return entries === 0 ? issue : null;
+}
+
+export function validateFontScale(value: number): ValidationIssue | null {
+  const issue: ValidationIssue = { field: "fontScale", messageKey: "displayFontSizeInvalid" };
+  if (typeof value !== "number" || !Number.isFinite(value)) return issue;
+  if (value < FONT_SCALE_MIN || value > FONT_SCALE_MAX) return issue;
+  if (value % FONT_SCALE_STEP !== 0) return issue;
+  return null;
+}
+
+export function validateTypography(typography: TranslationTypography): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const familyIssue = validateFontFamily(typography.fontFamily);
+  if (familyIssue) issues.push(familyIssue);
+  const scaleIssue = validateFontScale(typography.fontScale);
+  if (scaleIssue) issues.push(scaleIssue);
+  return issues;
 }
 
 export interface ProviderInput {

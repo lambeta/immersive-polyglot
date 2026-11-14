@@ -35,6 +35,19 @@ URL, the capture date and the reason for the substitution in this file.
 | news-long-words.html | News article | Unbreakable URL and identifier: horizontal-scroll guard (SC-004) |
 | docs-table.html | Documentation | Table-heavy page: cells are translation units |
 | article-hidden.html | Article | Hidden and `hidden`-attribute blocks mixed with visible prose |
+| article-abstract.html | Article | Authored: a ~900-character abstract and two long body paragraphs; split-block completeness (SC-001, SC-004, SC-007) |
+| article-tests-as-data.html | Article | Captured front matter of the reported page; SC-001 regression (see below) |
+
+### Captured page: article-tests-as-data.html
+
+- **URL**: https://martinfowler.com/articles/tests-as-data.html
+- **Captured**: 2026-11-14
+- **Reason**: the reported defect ("正文摘要没有全部翻译") and the acceptance case for SC-001. The
+  abstract is 999 characters and is translated in four parts.
+- **Scope of the capture**: article front matter (title, subtitle, abstract, date, author, tags,
+  contents) plus the Introduction heading and its first two paragraphs. Third-party scripts and site
+  chrome are removed; the captured text is not edited. Everything outside that region is absent, so
+  this fixture is evidence for the abstract only, not for the whole page.
 
 All pages are served over real HTTP by `tests/support/stub-provider.ts` under `/pages/`, so the
 extension meets them exactly as it meets a web page — no `file://` privileges required.

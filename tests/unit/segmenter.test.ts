@@ -344,6 +344,49 @@ describe("segment identity", () => {
   });
 });
 
+describe("part positions", () => {
+  const sentence = (n: number): string => `${"x".repeat(194)}${n}.`;
+  const longText = [1, 2, 3, 4, 5].map(sentence).join(" ");
+
+  it("numbers a split block's parts from zero in document order", () => {
+    const { result } = segmented(`<body><p>${longText}</p></body>`);
+    const queued = queuedOf(result);
+    expect(queued.length).toBeGreaterThan(1);
+    expect(queued.map((unit) => unit.partIndex)).toEqual(queued.map((_, index) => index));
+  });
+
+  it("gives a block that fits a single part at position zero", () => {
+    const { result } = segmented("<body><p>Short enough.</p></body>");
+    expect(queuedOf(result)[0]!.partIndex).toBe(0);
+  });
+
+  it("carries a position on every occurrence of a repeated long block", () => {
+    const { result, document } = segmented(
+      `<body><p id="a">${longText}</p><p id="b">${longText}</p></body>`,
+    );
+    const originals = queuedOf(result);
+    expect(originals.map((unit) => unit.partIndex)).toEqual([0, 1, 2]);
+    const repeated = result.duplicates.filter((entry) => entry.element === document.querySelector("#b"));
+    expect(repeated.map((entry) => entry.partIndex)).toEqual([0, 1, 2]);
+  });
+
+  it("keeps a repeated sentence inside one block as its own position", () => {
+    const repeated = `${"y".repeat(250)}.`;
+    const { result, document } = segmented(`<body><p>${repeated} ${repeated}</p></body>`);
+    expect(queuedOf(result)).toHaveLength(1);
+    expect(result.units[0]!.partIndex).toBe(0);
+    expect(result.duplicates).toHaveLength(1);
+    expect(result.duplicates[0]!.partIndex).toBe(1);
+    expect(result.duplicates[0]!.element).toBe(document.querySelector("p"));
+  });
+
+  it("gives a refused block position zero", () => {
+    const { result } = segmented('<body><nav><a href="#">Read more</a></nav><p>Read more</p></body>');
+    const refused = result.units.find((unit) => unit.state === "skipped");
+    expect(refused?.partIndex).toBe(0);
+  });
+});
+
 describe("unit contract", () => {
   it("carries every field the job and the renderer need", () => {
     const { result, document } = segmented('<html lang="en"><body><h2>Alpha</h2></body></html>');

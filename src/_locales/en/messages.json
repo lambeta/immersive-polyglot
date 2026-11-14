@@ -589,5 +589,32 @@
   },
   "displayStyleGray": {
     "message": "Gray"
+  },
+  "displayTypographyTitle": {
+    "message": "Translation text"
+  },
+  "displayFontFamily": {
+    "message": "Translation font"
+  },
+  "displayFontFamilyHint": {
+    "message": "A comma-separated font-family list, for example \"Source Han Serif SC\", serif. Leave empty to keep the page's own font."
+  },
+  "displayFontSize": {
+    "message": "Translation text size"
+  },
+  "displayFontSizeHint": {
+    "message": "Between 50% and 200% of each block's original size, in 5% steps. 100% keeps the page's size."
+  },
+  "displayTypographyReset": {
+    "message": "Reset to the page's typography"
+  },
+  "displayTypographySaved": {
+    "message": "Translation typography saved."
+  },
+  "displayFontInvalid": {
+    "message": "Use a comma-separated font-family list without semicolons, braces, angle brackets, control characters or url()."
+  },
+  "displayFontSizeInvalid": {
+    "message": "Enter a whole percentage from 50 to 200 in steps of 5."
   }
 }

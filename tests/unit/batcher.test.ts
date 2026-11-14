@@ -6,7 +6,7 @@ import type { TranslationUnit, UnitState } from "../../src/shared/types.js";
 /** Runs in the node environment: the batcher is pure bookkeeping over unit records. */
 
 function unit(id: string, sourceText: string, state: UnitState = "queued"): TranslationUnit {
-  return { id, sourceText, sourceLang: "en", targetLang: "zh", state, attempts: 0 };
+  return { id, sourceText, sourceLang: "en", targetLang: "zh", state, attempts: 0, partIndex: 0 };
 }
 
 function filler(chars: number): string {

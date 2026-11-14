@@ -1,4 +1,5 @@
 import { Journal } from "./restorer.js";
+import { isRtlLanguage } from "../shared/direction.js";
 import { displayStyleById, resolveDisplayStyle } from "../shared/display-styles.js";
 import {
   BLACK,
@@ -91,8 +92,9 @@ export class Renderer {
   setTargetLang(lang: string): void {
     this.#targetLang = lang;
     for (const record of this.#rendered.values()) {
-      this.#journal.recordAttribute(record.container, "lang");
+      this.#journal.recordAttributeOnce(record.container, "lang");
       record.container.setAttribute("lang", lang);
+      this.#applyDirection(record.container, lang);
     }
   }
 
@@ -131,8 +133,10 @@ export class Renderer {
     const rendered = this.#rendered.get(source);
     if (rendered) {
       rendered.container.textContent = clean;
+      this.#journal.recordAttributeOnce(rendered.container, "lang");
       rendered.container.setAttribute("lang", lang);
       rendered.container.setAttribute("data-ipt-unit", unit.id);
+      this.#applyDirection(rendered.container, lang);
       return rendered.container;
     }
 
@@ -141,13 +145,15 @@ export class Renderer {
 
     this.#journal.recordAttribute(container, "data-ipt");
     this.#journal.recordAttribute(container, "data-ipt-unit");
-    this.#journal.recordAttribute(container, "lang");
+    // Once: a later target-language switch rewrites the same attribute (FR-016).
+    this.#journal.recordAttributeOnce(container, "lang");
     this.#journal.recordAttributeOnce(container, "data-ipt-style");
     container.setAttribute("data-ipt", TARGET_MARKER);
     container.setAttribute("data-ipt-unit", unit.id);
     container.setAttribute("lang", lang);
     container.setAttribute("data-ipt-style", this.#style);
     container.textContent = clean;
+    this.#applyDirection(container, lang);
 
     this.#journal.recordAttribute(source, "data-ipt");
     this.#journal.recordAttribute(source, "data-ipt-unit");
@@ -221,6 +227,17 @@ export class Renderer {
       element.removeAttribute("hidden");
       element.style.removeProperty("display");
     }
+  }
+
+  /**
+   * FR-001/FR-005 (feature 004): an RTL target carries `dir="rtl"` so logical properties mirror and
+   * the text lays out right-to-left; every other target drops the attribute and inherits the page.
+   * Journalled once per container, so repeated language changes cannot grow the journal.
+   */
+  #applyDirection(container: HTMLElement, lang: string): void {
+    this.#journal.recordAttributeOnce(container, "dir");
+    if (isRtlLanguage(lang)) container.setAttribute("dir", "rtl");
+    else container.removeAttribute("dir");
   }
 
   /** Concealment attributes and the contrast-safe foreground for the current style. */

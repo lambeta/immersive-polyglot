@@ -23,7 +23,6 @@ export type DisplayStyleIconMark =
   | "none"
   | "underline"
   | "border"
-  | "rule"
   | "fill"
   | "band"
   | "band-slanted"
@@ -63,7 +62,7 @@ export const DISPLAY_STYLES: readonly DisplayStyle[] = [
   { id: "blur", order: 5, nameKey: "displayStyleBlur", treatment: "foreground", concealment: true, foregroundPolicy: "inherit", icon: { mark: "blur" } },
   { id: "transparency", order: 6, nameKey: "displayStyleTransparency", treatment: "foreground", concealment: true, foregroundPolicy: "inherit", icon: { mark: "dim" } },
   { id: "underline-dotted", order: 7, nameKey: "displayStyleUnderlineDotted", treatment: "underline", concealment: false, foregroundPolicy: "inherit", icon: { mark: "underline", pattern: "dotted" } },
-  { id: "divider", order: 8, nameKey: "displayStyleDivider", treatment: "divider", concealment: false, foregroundPolicy: "inherit", icon: { mark: "rule" } },
+  { id: "divider", order: 8, nameKey: "displayStyleDivider", treatment: "divider", concealment: false, foregroundPolicy: "inherit", icon: { mark: "bar", pattern: "dashed" } },
   { id: "highlight", order: 9, nameKey: "displayStyleHighlight", treatment: "marking", concealment: false, foregroundPolicy: "inherit", icon: { mark: "fill" } },
   { id: "marker", order: 10, nameKey: "displayStyleMarker", treatment: "marking", concealment: false, foregroundPolicy: "inherit", icon: { mark: "band" } },
   { id: "marker-2", order: 11, nameKey: "displayStyleMarker2", treatment: "marking", concealment: false, foregroundPolicy: "inherit", icon: { mark: "band-slanted" } },

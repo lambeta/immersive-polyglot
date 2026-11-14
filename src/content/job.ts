@@ -1,5 +1,5 @@
 import { planBatches } from "./batcher.js";
-import { segmentPage } from "./segmenter.js";
+import { segmentPage, type SegmentDuplicate } from "./segmenter.js";
 import { Renderer } from "./renderer.js";
 import { Journal, restorePage } from "./restorer.js";
 import type { PageObserver } from "./observer.js";
@@ -91,7 +91,11 @@ export class TranslationJob {
   readonly #journal = new Journal();
   readonly #renderer: Renderer;
   readonly #units: TranslationUnit[] = [];
-  readonly #duplicates: { unitId: string; ofUnitId: string; element: Element }[] = [];
+  readonly #duplicates: SegmentDuplicate[] = [];
+  /** Parts of each ordinary source block, in collection order; sorted by partIndex when rendered. */
+  readonly #blockParts = new Map<Element, TranslationUnit[]>();
+  /** Parts of each duplicate block, keyed by the duplicate element. */
+  readonly #duplicateBlocks = new Map<Element, SegmentDuplicate[]>();
   readonly #byId = new Map<string, TranslationUnit>();
   readonly #controllers = new Map<string, AbortController>();
   #state: JobState = "idle";
@@ -158,11 +162,24 @@ export class TranslationJob {
       }
       this.#byId.set(unit.id, unit);
       this.#units.push(unit);
+      if (unit.state === "queued" && unit.domRef) {
+        const parts = this.#blockParts.get(unit.domRef) ?? [];
+        parts.push(unit);
+        this.#blockParts.set(unit.domRef, parts);
+      }
       added += 1;
     }
     for (const duplicate of result.duplicates) {
-      if (this.#duplicates.some((entry) => entry.element === duplicate.element)) continue;
+      const original = this.#byId.get(duplicate.ofUnitId);
+      if (!original || original.state !== "queued") continue;
+      const known = this.#duplicates.some(
+        (entry) => entry.element === duplicate.element && entry.partIndex === duplicate.partIndex,
+      );
+      if (known) continue;
       this.#duplicates.push(duplicate);
+      const entries = this.#duplicateBlocks.get(duplicate.element) ?? [];
+      entries.push(duplicate);
+      this.#duplicateBlocks.set(duplicate.element, entries);
     }
     return added;
   }
@@ -294,23 +311,83 @@ export class TranslationJob {
   #render(unit: TranslationUnit): void {
     const element = unit.domRef;
     if (!element || !element.isConnected) return;
-    if (unit.state !== "translated" || !unit.translatedText) return;
+    this.#renderBlock(element);
+  }
+
+  /**
+   * Compose every translated part of one source block in part order and hand the whole passage to
+   * the renderer, which owns the single container for that block (FR-001, FR-002, FR-003).
+   */
+  #renderBlock(element: Element): void {
+    const units = this.#blockParts.get(element) ?? [];
+    const parts: { id: string; partIndex: number; text: string; targetLang: string }[] = [];
+    for (const unit of units) {
+      parts.push({
+        id: unit.id,
+        partIndex: unit.partIndex,
+        text:
+          unit.state === "translated" ? (unit.translatedText ?? "").trim() : "",
+        targetLang: unit.targetLang,
+      });
+    }
+    // A sentence repeated inside one block is registered as a duplicate of an earlier part of the
+    // same block. It is an extra part of this passage, not a separate duplicate block.
+    for (const entry of this.#duplicates) {
+      if (entry.element !== element) continue;
+      const original = this.#byId.get(entry.ofUnitId);
+      if (!original || original.domRef !== element) continue;
+      parts.push({
+        id: entry.unitId,
+        partIndex: entry.partIndex,
+        text:
+          original.state === "translated" ? (original.translatedText ?? "").trim() : "",
+        targetLang: original.targetLang,
+      });
+    }
+    if (parts.length === 0) return;
+    parts.sort((left, right) => left.partIndex - right.partIndex);
+
+    const contributing = parts.filter((part) => part.text.length > 0);
+    if (contributing.length === 0) return;
+    const text = contributing.map((part) => part.text).join(" ");
+    if (text.length === 0) return;
+    const blockId = parts[0]?.id;
+    if (!blockId) return;
+
     this.#renderer.renderUnit(
-      { id: unit.id, targetLang: unit.targetLang },
-      unit.translatedText,
+      { id: blockId, targetLang: contributing[0]?.targetLang },
+      text,
       element,
     );
   }
 
   #renderDuplicates(unit: TranslationUnit): void {
-    if (!unit.translatedText) return;
-    for (const duplicate of this.#duplicates) {
-      if (duplicate.ofUnitId !== unit.id) continue;
-      if (!duplicate.element.isConnected) continue;
+    const touched = new Set<Element>();
+    for (const [element, entries] of this.#duplicateBlocks) {
+      if (touched.has(element) || !element.isConnected) continue;
+      if (!entries.some((entry) => entry.ofUnitId === unit.id)) continue;
+      touched.add(element);
+
+      const ordered = entries.slice().sort((left, right) => left.partIndex - right.partIndex);
+      const blockId = ordered[0]?.unitId;
+      if (!blockId) continue;
+      const contributing: { text: string; targetLang: string }[] = [];
+      for (const entry of ordered) {
+        const original = this.#byId.get(entry.ofUnitId);
+        // Duplicates of parts in this very block are composed by #renderBlock, not as a block.
+        if (original?.domRef === element) continue;
+        if (original?.state !== "translated" || !original.translatedText) continue;
+        contributing.push({ text: original.translatedText.trim(), targetLang: original.targetLang });
+      }
+      const text = contributing
+        .map((part) => part.text)
+        .filter((part) => part.length > 0)
+        .join(" ");
+      if (text.length === 0) continue;
       this.#renderer.renderUnit(
-        { id: duplicate.unitId, targetLang: unit.targetLang },
-        unit.translatedText,
-        duplicate.element,
+        { id: blockId, targetLang: contributing[0]?.targetLang },
+        text,
+        element,
       );
     }
   }

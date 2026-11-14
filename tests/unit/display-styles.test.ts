@@ -129,3 +129,15 @@ describe("display style resolution for a host", () => {
     });
   });
 });
+describe("divider descriptor (feature 004)", () => {
+  it("describes a thin dashed leading-edge mark", () => {
+    const divider = displayStyleById("divider");
+    expect(divider.icon).toEqual({ mark: "bar", pattern: "dashed" });
+  });
+
+  it("retires the horizontal-rule mark so it cannot come back unseen", () => {
+    for (const style of DISPLAY_STYLES) {
+      expect(style.icon.mark, style.id).not.toBe("rule");
+    }
+  });
+});

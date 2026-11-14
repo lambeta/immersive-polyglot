@@ -110,6 +110,11 @@ export interface TranslationUnit {
   errorClass?: ErrorClass;
   attempts: number;
   reusedFrom?: UnitId;
+  /**
+   * 0-based position of this part within its source block. Concatenating a block's parts in this
+   * order is its complete translation. Ephemeral: never persisted and re-derived on segmentation.
+   */
+  partIndex: number;
   /** Ephemeral element handle; never persisted, dropped on restore. */
   domRef?: Element | null;
 }
@@ -198,6 +203,14 @@ export interface StyleSettings {
   temperature: number;
 }
 
+/** The reader's device-wide translation typography (feature 004). */
+export interface TranslationTypography {
+  /** Trimmed family list, or "" to inherit the page's font. */
+  fontFamily: string;
+  /** Integer percentage 50-200, multiple of 5; 100 means "do not override size". */
+  fontScale: number;
+}
+
 export interface LimitSettings {
   maxConcurrency: number;
   sessionCapSegments: number;
@@ -211,6 +224,10 @@ export interface UiSettings {
   displayMode: DisplayMode;
   /** Optional in storage; missing or unknown resolves to `none` (FR-004, FR-020). */
   displayStyle?: DisplayStyleId;
+  /** Optional; missing or empty means "inherit the page's font" (FR-009). */
+  translationFontFamily?: string;
+  /** Optional; missing or invalid resolves to 100 (FR-010). */
+  translationFontScale?: number;
 }
 
 export interface RoutingSettings {
