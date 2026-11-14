@@ -3,8 +3,7 @@
  * Renders the extension's action/app icons from `src/icons/design.svg`, the single vector master.
  * One source, four sizes, so the toolbar, the extensions page and the store listing cannot drift.
  *
- * The master is the dual-page mark designed for this product: a gold translation page peeking from
- * behind an off-white reading page, with a dark source line and a gold marker line on the front.
+ * The master is the bilingual page in src/icons/design.svg: a Latin A over 文.
  *
  * Requires a Playwright Chromium build (the same one the e2e suite uses):
  *   PLAYWRIGHT_BROWSERS_PATH="$PWD/.playwright-browsers" npm run make:icons

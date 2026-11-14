@@ -5,24 +5,19 @@ generated from it by `npm run make:icons`; never edit the PNGs by hand.
 
 ## The mark
 
-A compact badger portrait on a warm-red tile. The face is inset from the tile edge, with moderate
-ears and a short coral blaze that stops above the eyes. The dark cheeks are **short eye/cheek
-patches**, not crown-to-jaw bands: they frame the eyes instead of dividing the face. Cream sparks
-inside each patch are the eyes; a small deep-red nose closes the face.
-
-Earlier revisions used long vertical face-stripes, a full-height gold column, oversized ears and a
-four-chroma palette; those read as a raccoon and did not hang together. This version keeps one
-analogous warm-red family and fixes the proportions.
+A page split into the two languages the product puts on screen. The upper half is the source,
+a Latin A. The lower half is the translation, 文. The toolbar icon has no room for the name, so
+the picture itself has to say “this translates a page.”
 
 | Role | Colour |
 |---|---|
-| Tile | `#C2353E` (warm mid-red) |
-| Face | `#FFF0EB` (warm off-white, pink undertone) |
-| Cheeks / nose | `#7A1822` (deep red, not black) |
-| Blaze / ear inners | `#E89070` (coral) |
+| Source ground | `#F6E6D4` (warm cream) |
+| Translation ground | `#C2353E` (warm red) |
+| A | `#3A1814` (warm ink) |
+| 文 | `#F6E6D4` |
 
-Flat vector, no letterforms, no system fonts. At 16px the silhouette is tile → pale face → two
-separated cheek patches; the ear tips and the nose keep the shape reading as a face.
+Flat vector, no face. Drawn on a 16px grid: the A keeps its peak, counter and crossbar, and 文
+keeps the top stroke above the crossing strokes.
 
 ## Regenerating
 
