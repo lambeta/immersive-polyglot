@@ -4,53 +4,49 @@
       <rect width="1024" height="1024" rx="236" ry="236"/>
     </clipPath>
   </defs>
-  <!-- European badger portrait.
-       Cream head = silhouette. Twin vertical espresso face-stripes (not raccoon
-       goggles). Honey midline blaze = brand highlighter. Gold page ledge under chin. -->
   <g clip-path="url(#tileClip)">
-    <rect width="1024" height="1024" fill="#3E2418"/>
+    <rect width="1024" height="1024" fill="#A6202F"/>
 
-    <!-- Page ledge (translation cue; continuous bar, not twin paws) -->
-    <rect x="188" y="760" width="648" height="100" rx="50" ry="50" fill="#E8A63C"/>
+    <!-- ears: large blunt caps -->
+    <ellipse cx="226" cy="192" rx="146" ry="168" fill="#FFF4EE"/>
+    <ellipse cx="798" cy="192" rx="146" ry="168" fill="#FFF4EE"/>
 
-    <!-- Ears — blunt cream caps -->
-    <ellipse cx="286" cy="228" rx="108" ry="124" fill="#FBF2E4"/>
-    <ellipse cx="738" cy="228" rx="108" ry="124" fill="#FBF2E4"/>
+    <!-- head: the silhouette -->
+    <ellipse cx="512" cy="486" rx="378" ry="318" fill="#FFF4EE"/>
 
-    <!-- Head -->
-    <ellipse cx="512" cy="460" rx="372" ry="318" fill="#FBF2E4"/>
+    <!-- narrow face stripes, pushed out toward the ears -->
+    <path fill="#3A0C14" d="
+      M230 252
+      C276 248 308 278 316 334
+      L326 540
+      C330 598 306 638 264 648
+      C216 660 184 616 180 554
+      L172 372
+      C168 306 194 256 230 252 Z"/>
+    <path fill="#3A0C14" d="
+      M794 252
+      C748 248 716 278 708 334
+      L698 540
+      C694 598 718 638 760 648
+      C808 660 840 616 844 554
+      L852 372
+      C856 306 830 256 794 252 Z"/>
 
-    <!-- Left face-stripe (nose-to-ear band, vertical, badger — not a round mask) -->
-    <path fill="#2A160F" d="
-      M300 250
-      C360 245 395 280 405 340
-      L425 520
-      C430 575 400 620 355 635
-      C295 655 245 610 235 545
-      L220 360
-      C215 295 250 255 300 250 Z"/>
+    <!-- honey blaze: the marker accent, stopping behind the muzzle -->
+    <path fill="#FFC24D" d="
+      M512 156
+      C574 156 604 238 604 312
+      L592 596
+      C588 650 552 690 512 690
+      C472 690 436 650 432 596
+      L420 312
+      C420 238 450 156 512 156 Z"/>
 
-    <!-- Right face-stripe -->
-    <path fill="#2A160F" d="
-      M724 250
-      C664 245 629 280 619 340
-      L599 520
-      C594 575 624 620 669 635
-      C729 655 779 610 789 545
-      L804 360
-      C809 295 774 255 724 250 Z"/>
+    <!-- small eyes in the cream between blaze and stripe -->
+    <circle cx="368" cy="462" r="32" fill="#3A0C14"/>
+    <circle cx="656" cy="462" r="32" fill="#3A0C14"/>
 
-    <!-- Honey blaze (highlighter through the white stripe) -->
-    <path fill="#E8A63C" d="
-      M512 155
-      C575 155 605 235 605 310
-      L588 640
-      C582 695 550 730 512 730
-      C474 730 442 695 436 640
-      L419 310
-      C419 235 449 155 512 155 Z"/>
-
-    <!-- Blunt muzzle tip / nose -->
-    <ellipse cx="512" cy="690" rx="54" ry="40" fill="#2A160F"/>
+    <!-- nose -->
+    <ellipse cx="512" cy="700" rx="50" ry="36" fill="#3A0C14"/>
   </g>
 </svg>

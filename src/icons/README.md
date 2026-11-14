@@ -5,23 +5,25 @@ generated from it by `npm run make:icons`; never edit the PNGs by hand.
 
 ## The mark
 
-A badger portrait: a cream head on an espresso tile, twin vertical dark face-stripes, and a honey
-blaze down the centre that is the product's "marker" accent built into the animal rather than added
-as a separate object. Under the chin, a single honey ledge is the page the badger is reading — the
-translation cue, kept as one continuous bar so it never reads as paws.
+A badger portrait on a crimson tile: larger blunt ears, narrow dark face-stripes set out toward the
+ears, two small eyes in the cream beside the muzzle, and a honey blaze down the centre that carries
+the product's "marker" accent inside the animal. The blaze stops behind the muzzle, so it reads as
+fur rather than a beak.
 
 Why a badger: it is the bookish, stubborn reader who works a foreign page until it yields. The
 chosen animal also avoids the crowded mascot shelf (Duolingo's owl, Papago's parrot, Firefox's fox).
 
 | Role | Colour |
 |---|---|
-| Tile | `#3E2418` (espresso) |
-| Head / cream mass | `#FBF2E4` (warm cream) |
-| Face stripes / nose | `#2A160F` (deep espresso) |
-| Blaze / page ledge | `#E8A63C` (honey) |
+| Tile | `#A6202F` (crimson) |
+| Head / cream mass | `#FFF4EE` (warm white) |
+| Face stripes / eyes / nose | `#3A0C14` (deep wine) |
+| Blaze | `#FFC24D` (honey gold) |
 
-Flat vector, no letterforms, no system fonts. At 16px the silhouette is tile → pale head → honey
-stripe; the stripes survive as two dark bites and the chin ledge as a thin gold line.
+Flat vector, no letterforms, no system fonts. At 16px the silhouette is tile → pale head → gold
+stripe; the ears and the two dark side-stripes keep the shape from turning into a generic blob. The
+eyes are deliberately small and sit just above the 16px legibility floor: they add expression at
+32px and above without breaking the small size.
 
 ## Regenerating
 
