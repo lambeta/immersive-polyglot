@@ -5,25 +5,24 @@ generated from it by `npm run make:icons`; never edit the PNGs by hand.
 
 ## The mark
 
-A badger portrait on a crimson tile: larger blunt ears, narrow dark face-stripes set out toward the
-ears, two small eyes in the cream beside the muzzle, and a honey blaze down the centre that carries
-the product's "marker" accent inside the animal. The blaze stops behind the muzzle, so it reads as
-fur rather than a beak.
+A compact badger portrait on a warm-red tile. The face is inset from the tile edge, with moderate
+ears and a short coral blaze that stops above the eyes. The dark cheeks are **short eye/cheek
+patches**, not crown-to-jaw bands: they frame the eyes instead of dividing the face. Cream sparks
+inside each patch are the eyes; a small deep-red nose closes the face.
 
-Why a badger: it is the bookish, stubborn reader who works a foreign page until it yields. The
-chosen animal also avoids the crowded mascot shelf (Duolingo's owl, Papago's parrot, Firefox's fox).
+Earlier revisions used long vertical face-stripes, a full-height gold column, oversized ears and a
+four-chroma palette; those read as a raccoon and did not hang together. This version keeps one
+analogous warm-red family and fixes the proportions.
 
 | Role | Colour |
 |---|---|
-| Tile | `#A6202F` (crimson) |
-| Head / cream mass | `#FFF4EE` (warm white) |
-| Face stripes / eyes / nose | `#3A0C14` (deep wine) |
-| Blaze | `#FFC24D` (honey gold) |
+| Tile | `#C2353E` (warm mid-red) |
+| Face | `#FFF0EB` (warm off-white, pink undertone) |
+| Cheeks / nose | `#7A1822` (deep red, not black) |
+| Blaze / ear inners | `#E89070` (coral) |
 
-Flat vector, no letterforms, no system fonts. At 16px the silhouette is tile → pale head → gold
-stripe; the ears and the two dark side-stripes keep the shape from turning into a generic blob. The
-eyes are deliberately small and sit just above the 16px legibility floor: they add expression at
-32px and above without breaking the small size.
+Flat vector, no letterforms, no system fonts. At 16px the silhouette is tile → pale face → two
+separated cheek patches; the ear tips and the nose keep the shape reading as a face.
 
 ## Regenerating
 

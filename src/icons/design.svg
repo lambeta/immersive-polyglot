@@ -1,52 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Immersive Polyglot · candidate A · compact badger
+       Tile #C2353E · face #FFF0EB · features #7A1822 · accent #E89070
+       Short cheek patches (not crown→jaw); moderate ears; short forehead blaze -->
   <defs>
     <clipPath id="tileClip">
       <rect width="1024" height="1024" rx="236" ry="236"/>
     </clipPath>
   </defs>
   <g clip-path="url(#tileClip)">
-    <rect width="1024" height="1024" fill="#A6202F"/>
+    <rect width="1024" height="1024" fill="#C2353E"/>
 
-    <!-- ears: large blunt caps -->
-    <ellipse cx="226" cy="192" rx="146" ry="168" fill="#FFF4EE"/>
-    <ellipse cx="798" cy="192" rx="146" ry="168" fill="#FFF4EE"/>
+    <!-- ears: moderate, clear of tile edge -->
+    <ellipse cx="278" cy="236" rx="100" ry="116" fill="#FFF0EB"/>
+    <ellipse cx="746" cy="236" rx="100" ry="116" fill="#FFF0EB"/>
+    <ellipse cx="278" cy="244" rx="42" ry="50" fill="#E89070"/>
+    <ellipse cx="746" cy="244" rx="42" ry="50" fill="#E89070"/>
 
-    <!-- head: the silhouette -->
-    <ellipse cx="512" cy="486" rx="378" ry="318" fill="#FFF4EE"/>
+    <!-- head inset for breathing room -->
+    <ellipse cx="512" cy="540" rx="312" ry="286" fill="#FFF0EB"/>
 
-    <!-- narrow face stripes, pushed out toward the ears -->
-    <path fill="#3A0C14" d="
-      M230 252
-      C276 248 308 278 316 334
-      L326 540
-      C330 598 306 638 264 648
-      C216 660 184 616 180 554
-      L172 372
-      C168 306 194 256 230 252 Z"/>
-    <path fill="#3A0C14" d="
-      M794 252
-      C748 248 716 278 708 334
-      L698 540
-      C694 598 718 638 760 648
-      C808 660 840 616 844 554
-      L852 372
-      C856 306 830 256 794 252 Z"/>
+    <!-- short forehead blaze — stops above eyes -->
+    <path fill="#E89070" d="
+      M512 278
+      C552 278 572 320 572 358
+      L564 420
+      C560 442 540 454 512 454
+      C484 454 464 442 460 420
+      L452 358
+      C452 320 472 278 512 278 Z"/>
 
-    <!-- honey blaze: the marker accent, stopping behind the muzzle -->
-    <path fill="#FFC24D" d="
-      M512 156
-      C574 156 604 238 604 312
-      L592 596
-      C588 650 552 690 512 690
-      C472 690 436 650 432 596
-      L420 312
-      C420 238 450 156 512 156 Z"/>
+    <!-- compact cheek patches — frame eyes only -->
+    <ellipse cx="352" cy="520" rx="86" ry="72" fill="#7A1822"/>
+    <ellipse cx="672" cy="520" rx="86" ry="72" fill="#7A1822"/>
 
-    <!-- small eyes in the cream between blaze and stripe -->
-    <circle cx="368" cy="462" r="32" fill="#3A0C14"/>
-    <circle cx="656" cy="462" r="32" fill="#3A0C14"/>
+    <!-- cream eye sparks (survive as 1–2px at 16) -->
+    <circle cx="360" cy="510" r="26" fill="#FFF0EB"/>
+    <circle cx="664" cy="510" r="26" fill="#FFF0EB"/>
 
-    <!-- nose -->
-    <ellipse cx="512" cy="700" rx="50" ry="36" fill="#3A0C14"/>
+    <ellipse cx="512" cy="700" rx="46" ry="32" fill="#7A1822"/>
   </g>
 </svg>
