@@ -12,6 +12,7 @@ import type {
   JobState,
   ProviderErrorClass,
   Settings,
+  TranslationTypography,
   TranslationUnit,
 } from "../shared/types.js";
 import type { JobStatusPayload } from "../shared/messages.js";
@@ -52,6 +53,8 @@ export interface JobOptions {
   providerId: string;
   displayMode: DisplayMode;
   displayStyle?: DisplayStyleId;
+  /** Feature 004: the reader's translation typography (FR-009, FR-010). */
+  typography?: TranslationTypography;
   targetLang: string;
   sourceLang: string;
   caller: BatchCaller;
@@ -112,6 +115,7 @@ export class TranslationJob {
     this.#renderer = new Renderer(this.#journal, {
       displayMode: options.displayMode,
       displayStyle: options.displayStyle,
+      ...(options.typography ? { typography: options.typography } : {}),
       targetLang: options.targetLang,
       view: options.view ?? null,
     });
@@ -454,6 +458,11 @@ export class TranslationJob {
   /** FR-002: presentation-only, so no unit state changes and no request is issued. */
   setDisplayStyle(style: DisplayStyleId | string): void {
     this.#renderer.setDisplayStyle(style);
+  }
+
+  /** Feature 004 FR-019: presentation-only, same guarantee as setDisplayStyle. */
+  setTypography(typography: TranslationTypography): void {
+    this.#renderer.setTypography(typography);
   }
 
   /** Cost visibility (FR-028): what this session has actually sent, never a money figure (FR-029). */

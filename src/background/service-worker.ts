@@ -269,6 +269,18 @@ async function handleCommand(command: CommandMessage, sendResponse: (reply: unkn
       sendResponse({ ok: true });
       return;
     }
+    case "typographyChanged": {
+      // Feature 004 FR-019: the same relay the display style uses, with the pair intact.
+      const tabs = await chrome.tabs.query({});
+      for (const tab of tabs) {
+        if (tab.id === undefined) continue;
+        chrome.tabs.sendMessage(tab.id, { type: "setTypography", typography: command.typography }).catch(() => {
+          // A tab without the content script is not a failure.
+        });
+      }
+      sendResponse({ ok: true });
+      return;
+    }
     default:
       sendResponse({ ok: false, ignored: command.type });
   }

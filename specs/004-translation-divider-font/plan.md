@@ -6,13 +6,12 @@
 
 ## Summary
 
-Replace the Divider display style's full-width top border with a hairline dashed rule on the
-translation's **logical inline-start edge** (left in LTR, right in RTL), spanning the block's full
-height, with the translation's own text styling untouched. The same change lands in the shared
-stylesheet, the live sample, and the generated preview icon, so the picker and the page cannot
-disagree. To make the rule mirror for RTL targets deterministically, translated blocks gain a
-`dir` value derived from the target language (a behaviour correction that also fixes the Quote bar
-for RTL content).
+Replace the Divider display style with a **short dashed horizontal line of about fifteen segments just
+above the translation** — never a full-width rule, never a line down an edge — with the translation's
+own text styling untouched. The same treatment lands in the shared stylesheet, the live
+sample, and the generated preview icon, so the picker and the page cannot disagree. Translated blocks
+also gain a `dir` value derived from the target language, so an RTL target's text reads in the correct
+direction (a behaviour correction that also fixes the Quote bar for RTL content).
 
 Add a device-wide typography preference: an optional custom font-family stack and a font-size scale
 (50–200%, default 100%, 5% steps) applied to translated blocks **relative to each source block's own
@@ -85,20 +84,20 @@ src/
 │   ├── types.ts                # UiSettings: optional translationFontFamily / translationFontScale
 │   ├── settings.ts             # defaultSettings + tolerant mergeDefaults for the two fields
 │   ├── validation.ts           # validateTypography(): font-family grammar + size range
-│   ├── display-styles.ts       # divider icon descriptor (vertical dashed edge mark)
+│   ├── display-styles.ts       # divider icon descriptor (dashed horizontal rule mark)
 │   ├── direction.ts            # NEW: isRtlLanguage(), the only place that decides text direction
 │   └── messages.ts             # typographyChanged (UI→worker) and setTypography (worker→content)
 ├── content/
-│   ├── renderer.ts             # leading-edge divider state, typography override after inheritance,
+│   ├── renderer.ts             # divider decoration state, typography override after inheritance,
 │   │                           #   dir attribute, setTypography(), record base typography
 │   ├── job.ts                  # JobOptions.typography, setTypography() passthrough
 │   └── index.ts                # resolve typography from settings, handle setTypography, fresh jobs
 ├── background/
 │   └── service-worker.ts       # relay typographyChanged to every tab as setTypography
 ├── styles/
-│   └── display-styles.css      # divider: inline-start dashed border + inline-start padding
+│   └── display-styles.css      # divider: short dashed ::before line above the translation
 ├── ui/
-│   ├── shared/style-preview.ts # bar mark honours a dash pattern → divider icon
+│   ├── shared/style-preview.ts # rule mark honours a dash pattern → divider icon
 │   └── options/
 │       ├── options.html        # Display panel: font family input, size input, reset, error slot
 │       ├── options.ts          # load/save/validate, live sample typography, notify tabs
@@ -115,14 +114,14 @@ tests/
 │   ├── renderer.test.ts              # (extend) RTL dir attribute present, updated, restored
 │   ├── renderer-typography.test.ts  # NEW: family override, scale, line-height, fallback, 100% no-op
 │   ├── renderer-style.test.ts        # (extend) divider leaves text untouched; only the container is marked
-│   └── style-preview.test.ts         # (extend) divider icon is a dashed vertical mark
+│   └── style-preview.test.ts         # (extend) divider icon is a dashed horizontal rule
 └── e2e/
-    ├── display-styles.spec.ts        # (extend) divider renders vertical, no horizontal decoration
+    ├── display-styles.spec.ts        # (extend) divider renders a short dashed line, no edge decoration
     └── typography.spec.ts            # NEW: save, live restyle, persistence, invalid input, reset, sample
 ```
 
 `scripts/verify-styles.mjs` is re-run (not restructured) to confirm the fifteen styles remain
-pairwise distinct after Divider becomes vertical; the script prints its weakest pair every run.
+pairwise distinct after Divider's treatment changes; the script prints its weakest pair every run.
 
 **Structure Decision**: Keep the existing single-extension layout. The only new module is
 `src/shared/direction.ts` (one pure predicate, shared by the renderer and its tests), because
@@ -142,8 +141,8 @@ modules feature 002/001 already established (`display-styles.ts`, `renderer.ts`,
 
 Unknowns extracted from Technical Context and the spec, resolved in [research.md](./research.md):
 
-- **R1** — How to draw a full-height, hairline, dashed leading rule that survives lists/table cells and mirrors in RTL (logical inline border vs. pseudo-element vs. background gradient).
-- **R2** — How the translation's direction is established so the rule mirrors for an RTL *target* on an LTR page.
+- **R1** — How to draw a short, hairline, dashed line of about fifteen segments above every block (generated box vs. container border vs. background gradient).
+- **R2** — How the translation's text direction is established for an RTL target on an LTR page.
 - **R3** — How to scale translation size per source block without flattening the heading/body hierarchy and without line overlap.
 - **R4** — Which font-family values are accepted, and how fallback keeps missing glyphs readable.
 - **R5** — Persistence shape and migration policy for two optional settings.
@@ -186,7 +185,7 @@ and the shipped rendering cannot diverge (Constitution I).
 
 | Risk | Mitigation |
 |---|---|
-| After Divider becomes vertical, its pixel signature could drift toward Quote's in the 105-pair distinctness check (threshold 0.5%). | Run `npm run verify:styles`; it prints the weakest pair. If divider/quote falls below threshold, widen the difference in the treatment itself (dash rhythm, thickness, gap) — never lower the threshold. |
+| After Divider becomes a short dashed line, its small pixel signature could drift toward another dashed style in the 105-pair distinctness check (threshold 0.5%). | Run `npm run verify:styles`; it prints the weakest pair. If Divider falls below threshold, widen the difference in the treatment itself (line position above the block, length, dash rhythm, thickness) — never lower the threshold. |
 | Explicit `dir` on translations changes existing RTL rendering. | Covered by the mode × direction layout matrix plus a new DOM test; `dir` is journalled and restored. |
 | Scaling `line-height` from a computed pixel value behaves differently in jsdom (which may report `normal`). | The renderer scales only concrete pixel values and leaves `normal` alone; the DOM test covers both branches. |
 | A custom font stack that omits the page font could hide glyphs. | The renderer appends the source's computed family as the final fallback; e2e covers a Latin-only face with Chinese text. |

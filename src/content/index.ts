@@ -8,6 +8,7 @@ import {
 import { resolveProvider } from "../shared/routing.js";
 import { createSettingsStore } from "../shared/settings.js";
 import { resolveDisplayStyleForHost } from "../shared/display-styles.js";
+import { resolveTypography } from "../shared/settings.js";
 import type { DisplayMode, DisplayStyleId, ErrorClass, Settings } from "../shared/types.js";
 import { RequestLimiter, VolumeBudget } from "./limiter.js";
 import { PageObserver } from "./observer.js";
@@ -290,6 +291,7 @@ async function startTranslation(options: { providerOverrideId?: string; elements
     providerId: provider.id,
     displayMode: displayModeFor(current),
     displayStyle: displayStyleFor(current),
+    typography: resolveTypography(current),
     targetLang,
     sourceLang: current.ui.sourceLang,
     caller: portClient,
@@ -366,6 +368,12 @@ function handleCommand(command: CommandMessage, sendResponse: (reply: unknown) =
       // FR-002: restyle what is already on the page; the next render resolves from storage.
       cachedSettings = null;
       job?.setDisplayStyle(command.style);
+      sendResponse({ ok: true });
+      return;
+    case "setTypography":
+      // Feature 004 FR-019: restyle what is already on the page, never request a translation.
+      cachedSettings = null;
+      job?.setTypography(command.typography);
       sendResponse({ ok: true });
       return;
     case "setDisplayMode":

@@ -4,7 +4,7 @@ import { CredentialField } from "../shared/credential-field.js";
 import { StylePicker } from "../shared/style-picker.js";
 import { previewIcon } from "../shared/style-preview.js";
 import { DISPLAY_STYLES, displayStyleById, isDisplayStyleId, resolveDisplayStyle } from "../../shared/display-styles.js";
-import { createSettingsStore, defaultSettings } from "../../shared/settings.js";
+import { createSettingsStore, defaultSettings, sanitiseTypography } from "../../shared/settings.js";
 import { deleteProviderCascade, saveProvider } from "../../shared/providers.js";
 import { addEntry } from "../../shared/glossary.js";
 import { DEEPSEEK_PRESET } from "./presets.js";
@@ -13,6 +13,7 @@ import {
   validateLanguageCode,
   validateProvider,
   validateSitePattern,
+  validateTypography,
 } from "../../shared/validation.js";
 import type {
   DisplayMode,
@@ -21,6 +22,7 @@ import type {
   RoutingRule,
   Settings,
   TranslationProvider,
+  TranslationTypography,
 } from "../../shared/types.js";
 import type { CredentialMaskReply } from "../../shared/messages.js";
 
@@ -664,6 +666,37 @@ function renderDisplayPanel(): void {
     host.append(stylePicker.element);
   }
   stylePicker.setValue(settings.ui.displayStyle);
+  setValue("translation-font-family", settings.ui.translationFontFamily ?? "");
+  setValue("translation-font-scale", settings.ui.translationFontScale ?? 100);
+  applySampleTypography();
+}
+
+/** The sample line inside the picker; the same element pairs style with typography (FR-022). */
+function sampleElement(): HTMLElement | null {
+  return document.querySelector<HTMLElement>(".ipt-style-sample");
+}
+
+function currentTypography(): TranslationTypography {
+  const scale = qs<HTMLInputElement>(document, "#translation-font-scale").valueAsNumber;
+  return {
+    fontFamily: value("translation-font-family"),
+    fontScale: Number.isFinite(scale) ? scale : Number.NaN,
+  };
+}
+
+/** FR-022: the sample shows the entered family and size before anything is saved. */
+function applySampleTypography(): void {
+  const sample = sampleElement();
+  if (!sample) return;
+  const { fontFamily, fontScale } = currentTypography();
+  const family = sanitiseTypography({ fontFamily, fontScale }).fontFamily;
+  if (family.length === 0) sample.style.removeProperty("font-family");
+  else sample.style.setProperty("font-family", family);
+  if (Number.isFinite(fontScale) && fontScale !== 100) {
+    sample.style.setProperty("font-size", `${fontScale}%`);
+  } else {
+    sample.style.removeProperty("font-size");
+  }
 }
 
 async function notifyStyleChanged(style: DisplayStyleId): Promise<void> {
@@ -672,6 +705,58 @@ async function notifyStyleChanged(style: DisplayStyleId): Promise<void> {
   } catch {
     // No receiver is not a failure: the next render resolves the style from storage.
   }
+}
+
+async function notifyTypographyChanged(typography: TranslationTypography): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage({ type: "typographyChanged", typography });
+  } catch {
+    // No receiver is not a failure: the next render resolves the value from storage.
+  }
+}
+
+/** FR-017/FR-018/FR-019/FR-021: one save path for the style, the family, the size and Reset. */
+async function saveDisplaySettings(): Promise<void> {
+  const panel = qs<HTMLElement>(document, "#panel-display");
+  const entered = currentTypography();
+  const issues = validateTypography(entered);
+  clearErrors(panel);
+  if (issues.length > 0) {
+    showFieldErrors(panel, issues);
+    feedback("display-style-feedback", t(issues[0]?.messageKey ?? "displayFontInvalid"));
+    return;
+  }
+
+  const style = stylePicker?.value ?? "none";
+  const previous = settings.ui;
+  const typography = sanitiseTypography(entered);
+  await store.save((current) => {
+    current.ui.displayStyle = style;
+    current.ui.translationFontFamily = typography.fontFamily;
+    current.ui.translationFontScale = typography.fontScale;
+    return current;
+  });
+  settings = await store.load();
+
+  const typographyChanged =
+    previous.translationFontFamily !== typography.fontFamily ||
+    previous.translationFontScale !== typography.fontScale;
+  await notifyStyleChanged(style);
+  await notifyTypographyChanged(typography);
+  setValue("translation-font-family", typography.fontFamily);
+  setValue("translation-font-scale", typography.fontScale);
+  applySampleTypography();
+  feedback(
+    "display-style-feedback",
+    t(typographyChanged ? "displayTypographySaved" : "displayStyleSaved"),
+  );
+}
+
+function resetTypography(): void {
+  setValue("translation-font-family", "");
+  setValue("translation-font-scale", 100);
+  applySampleTypography();
+  void saveDisplaySettings();
 }
 
 function wireTabs(): void {
@@ -804,16 +889,15 @@ function wireForms(): void {
     await renderGlossary();
   });
 
-  qs<HTMLButtonElement>(document, "#display-style-save").addEventListener("click", async () => {
-    const style = stylePicker?.value ?? "none";
-    await store.save((current) => {
-      current.ui.displayStyle = style;
-      return current;
-    });
-    settings = await store.load();
-    await notifyStyleChanged(style);
-    feedback("display-style-feedback", t("displayStyleSaved"));
+  qs<HTMLButtonElement>(document, "#display-style-save").addEventListener("click", () => {
+    void saveDisplaySettings();
   });
+  qs<HTMLButtonElement>(document, "#display-typography-reset").addEventListener("click", () => {
+    resetTypography();
+  });
+  for (const id of ["translation-font-family", "translation-font-scale"]) {
+    qs<HTMLInputElement>(document, `#${id}`).addEventListener("input", () => applySampleTypography());
+  }
 
   qs<HTMLButtonElement>(document, "#style-save").addEventListener("click", async () => {
     await store.save((current) => {
@@ -863,6 +947,9 @@ async function boot(): Promise<void> {
     void store.load().then((next) => {
       settings = next;
       stylePicker?.setValue(next.ui.displayStyle);
+      setValue("translation-font-family", next.ui.translationFontFamily ?? "");
+      setValue("translation-font-scale", next.ui.translationFontScale ?? 100);
+      applySampleTypography();
     });
   });
 

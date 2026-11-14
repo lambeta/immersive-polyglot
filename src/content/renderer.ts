@@ -1,6 +1,7 @@
 import { Journal } from "./restorer.js";
 import { isRtlLanguage } from "../shared/direction.js";
 import { displayStyleById, resolveDisplayStyle } from "../shared/display-styles.js";
+import { sanitiseTypography } from "../shared/settings.js";
 import {
   BLACK,
   effectiveBackdrop,
@@ -9,7 +10,7 @@ import {
   safeForeground,
   toCss,
 } from "../shared/contrast.js";
-import type { DisplayMode, DisplayStyleId } from "../shared/types.js";
+import type { DisplayMode, DisplayStyleId, TranslationTypography } from "../shared/types.js";
 
 /**
  * Reproduces the rendering behaviour pinned by contracts/rendering-dom.md section 1: each
@@ -46,6 +47,10 @@ interface RenderedRecord {
   hidden: boolean;
   /** The inherited colour written by #inheritTypography, restored when a foreground style ends. */
   baseColor: string;
+  /** Feature 004: the source typography captured once, so restyling never re-reads a hidden source. */
+  baseFontFamily: string;
+  baseFontSizePx: number | null;
+  baseLineHeight: string;
 }
 
 export interface RenderOptions {
@@ -53,6 +58,8 @@ export interface RenderOptions {
   targetLang: string;
   /** FR-001: the resolved display style. Unknown values resolve to "none" (FR-020). */
   displayStyle?: DisplayStyleId;
+  /** Feature 004 FR-009/FR-010: the reader's translation typography. */
+  typography?: TranslationTypography;
   /** Injected for tests; defaults to the element's own window. */
   view?: Window | null;
 }
@@ -63,6 +70,7 @@ export class Renderer {
   #mode: DisplayMode;
   #targetLang: string;
   #style: DisplayStyleId;
+  #typography: TranslationTypography;
   readonly #rendered = new Map<Element, RenderedRecord>();
 
   constructor(journal: Journal, options: RenderOptions) {
@@ -71,6 +79,7 @@ export class Renderer {
     this.#mode = options.displayMode;
     this.#targetLang = options.targetLang;
     this.#style = resolveDisplayStyle(options.displayStyle);
+    this.#typography = sanitiseTypography(options.typography ?? {});
   }
 
   get displayStyle(): DisplayStyleId {
@@ -83,6 +92,10 @@ export class Renderer {
 
   get targetLang(): string {
     return this.#targetLang;
+  }
+
+  get typography(): TranslationTypography {
+    return { ...this.#typography };
   }
 
   count(): number {
@@ -110,6 +123,23 @@ export class Renderer {
       this.#journal.recordAttributeOnce(record.container, "data-ipt-style");
       record.container.setAttribute("data-ipt-style", next);
       this.#applyPresentation(record);
+    }
+  }
+
+  /**
+   * Feature 004 FR-019: apply the reader's typography to every block already on the page, without
+   * creating a node, re-segmenting or requesting a translation.
+   */
+  setTypography(typography: TranslationTypography): void {
+    const next = sanitiseTypography(typography);
+    if (next.fontFamily === this.#typography.fontFamily && next.fontScale === this.#typography.fontScale) {
+      return;
+    }
+    this.#typography = next;
+    for (const record of this.#rendered.values()) {
+      this.#applyTypography(record);
+      // The contrast rule classifies large text by computed size, so the colour follows the type.
+      this.#applyForeground(record);
     }
   }
 
@@ -161,15 +191,21 @@ export class Renderer {
     source.setAttribute("data-ipt-unit", unit.id);
 
     this.#inheritTypography(source, container);
-    this.#place(container, source);
-    this.#journal.recordInsert(container, container.parentNode ?? source, container.nextSibling);
 
     const record: RenderedRecord = {
       container,
       source,
       hidden: false,
       baseColor: container.style.getPropertyValue("color"),
+      baseFontFamily: "",
+      baseFontSizePx: null,
+      baseLineHeight: "",
     };
+    this.#captureBaseTypography(record);
+    this.#applyTypography(record);
+
+    this.#place(container, source);
+    this.#journal.recordInsert(container, container.parentNode ?? source, container.nextSibling);
     this.#hideSource(record, this.#mode === "only");
     this.#rendered.set(source, record);
     this.#applyPresentation(record);
@@ -238,6 +274,51 @@ export class Renderer {
     this.#journal.recordAttributeOnce(container, "dir");
     if (isRtlLanguage(lang)) container.setAttribute("dir", "rtl");
     else container.removeAttribute("dir");
+  }
+
+  /** Captures the source typography once; restyling must not re-read a hidden source. */
+  #captureBaseTypography(record: RenderedRecord): void {
+    const view = this.#view ?? record.source.ownerDocument.defaultView;
+    if (!view || typeof view.getComputedStyle !== "function") return;
+    try {
+      const computed = view.getComputedStyle(record.source);
+      record.baseFontFamily = computed.getPropertyValue("font-family").trim();
+      const size = Number.parseFloat(computed.getPropertyValue("font-size"));
+      if (Number.isFinite(size) && size > 0) record.baseFontSizePx = size;
+      record.baseLineHeight = computed.getPropertyValue("line-height").trim();
+    } catch {
+      // Keep the defaults; a hostile page must not stop a render.
+    }
+  }
+
+  /**
+   * Feature 004 FR-009/FR-010/FR-011/FR-014/FR-015: the family stack with the source family as
+   * the final fallback, and a size scale relative to this block's own source size.
+   */
+  #applyTypography(record: RenderedRecord): void {
+    const style = record.container.style;
+    this.#journal.recordStyle(record.container);
+    const { fontFamily, fontScale } = this.#typography;
+
+    if (fontFamily.length === 0) style.removeProperty("font-family");
+    else style.setProperty("font-family", composeFontFamily(fontFamily, record.baseFontFamily));
+
+    if (fontScale === 100 || record.baseFontSizePx === null) {
+      style.removeProperty("font-size");
+      style.removeProperty("line-height");
+      return;
+    }
+
+    style.setProperty("font-size", formatPx((record.baseFontSizePx * fontScale) / 100));
+    const lineHeight = Number.parseFloat(record.baseLineHeight);
+    if (Number.isFinite(lineHeight) && lineHeight > 0) {
+      style.setProperty("line-height", formatPx((lineHeight * fontScale) / 100));
+    } else if (record.baseLineHeight === "normal" || record.baseLineHeight.length === 0) {
+      // An unset computed line-height is the initial value, "normal"; scaling must keep that.
+      style.setProperty("line-height", "normal");
+    } else {
+      style.removeProperty("line-height");
+    }
   }
 
   /** Concealment attributes and the contrast-safe foreground for the current style. */
@@ -318,4 +399,27 @@ export class Renderer {
       container.style.setProperty(property, value);
     }
   }
+}
+/** Formats a scaled length the way a declaration would report it, without float noise. */
+function formatPx(value: number): string {
+  return String(Math.round(value * 100) / 100) + "px";
+}
+
+/** Strips the quotes from one family entry so equality ignores a quoted and an unquoted name. */
+function unquoteFamily(entry: string): string {
+  return entry.trim().replace(/^["']|["']$/g, "").trim().toLowerCase();
+}
+
+/**
+ * Feature 004 FR-014: the reader's stack, with the source family appended as the final fallback
+ * unless the stack already ends with it. Keeps missing glyphs readable in the page's own face.
+ */
+function composeFontFamily(stack: string, sourceFamily: string): string {
+  const source = sourceFamily.trim();
+  if (source.length === 0) return stack;
+  const entries = stack.split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+  const last = unquoteFamily(entries[entries.length - 1] ?? "");
+  const firstSource = unquoteFamily(source.split(",")[0] ?? "");
+  if (last.length > 0 && last === firstSource) return stack;
+  return stack + ", " + source;
 }

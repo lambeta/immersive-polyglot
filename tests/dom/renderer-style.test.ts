@@ -266,6 +266,7 @@ describe("divider decoration (feature 004)", () => {
     expect(target.style.fontStyle).toBe("");
     expect(target.style.textDecoration).toBe("");
     expect(target.style.getPropertyValue("border-inline-start")).toBe("");
+    expect(target.style.getPropertyValue("border-block-start")).toBe("");
     expect(source.textContent).toBe("Hello");
     expect(source.getAttribute("data-ipt")).toBe("source");
   });

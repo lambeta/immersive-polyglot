@@ -148,4 +148,42 @@ describe("command guard", () => {
     expect(() => parseCommand({ type: "setDisplayStyle" })).toThrowError(/style/);
     expect(() => parseCommand({ type: "styleChanged", style: 3 })).toThrowError(/style/);
   });
+
+  it("parses the typography commands and carries the pair verbatim (FR-019)", () => {
+    const typography = { fontFamily: '"Source Han Serif SC", serif', fontScale: 125 };
+    expect(parseCommand({ type: "typographyChanged", typography })).toEqual({
+      type: "typographyChanged",
+      typography,
+    });
+    expect(parseCommand({ type: "setTypography", typography })).toEqual({
+      type: "setTypography",
+      typography,
+    });
+  });
+
+  it("refuses a malformed typography payload (FR-019)", () => {
+    for (const payload of [
+      {},
+      { typography: null },
+      { typography: [] },
+      { typography: { fontFamily: 1, fontScale: 100 } },
+      { typography: { fontFamily: "Georgia", fontScale: "125" } },
+      { typography: { fontFamily: "Georgia", fontScale: Number.NaN } },
+      { typography: { fontFamily: "Georgia", fontScale: Number.POSITIVE_INFINITY } },
+      { typography: {} },
+    ]) {
+      expect(() => parseCommand({ type: "setTypography", ...payload }), JSON.stringify(payload)).toThrowError(
+        MessageError,
+      );
+    }
+  });
+
+  it("still refuses a credential field inside a typography payload", () => {
+    expect(() =>
+      parseCommand({
+        type: "typographyChanged",
+        typography: { fontFamily: "Georgia", fontScale: 100, secret: "sk-live" },
+      }),
+    ).toThrowError(/secret/);
+  });
 });

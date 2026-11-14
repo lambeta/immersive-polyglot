@@ -7,40 +7,37 @@ recorded because the constitution requires the rejected option to be visible, no
 
 ---
 
-## R1 — Drawing the divider rule
+## R1 — Drawing the divider line
 
-**Decision**: The Divider treatment becomes one logical-edge declaration on the translation block:
-a 1 px dashed rule on the inline-start edge plus a small inline-start padding. The block-start rule
-and its padding are removed.
+**Decision**: The Divider treatment is a short dashed horizontal line above the translation, drawn by
+one generated box: `::before` with an empty `content`, `display: block`, `width: 88px`, `max-width: 50%`,
+a 1 px dashed `border-block-start` in `currentColor`, and a small `margin-block-end`.
 
 **Rationale**:
-- A border is drawn by the layout engine at the element's border box, so its **height is the block's
-  height** for every block, including multi-line paragraphs and single-line headings, with no
-  measurement, no JavaScript, and no extra DOM node to journal.
-- `inline-start` is logical: it becomes the left edge in LTR and the right edge in RTL with no
-  duplicated rule.
-- A border keeps working under `forced-colors` (the existing rule already maps the divider's
-  border colour to `CanvasText`), under zoom, and in print-like layouts.
-- It costs one declaration to add and one to remove, and the exact-restore journal already knows how
-  to undo inline declarations on the container.
+- A full-width rule reads as page-authored furniture and was rejected by the product owner; the
+  reference product instead draws a line of roughly fifteen dash segments, which is what the request
+  asked for.
+- A fixed 88 px width makes the number of dashes stable: the platform's 1 px dash pattern produces
+  about fifteen segments at any viewport, so the line never grows into a rule or shrinks into a stub.
+- The generated box belongs to a container the product already owns, so it adds no DOM node to
+  journal and no attribute to restore; exact restore is unchanged.
+- A dashed border keeps working under `forced-colors`, zoom and print-like layouts, and `currentColor`
+  keeps the line at least as legible as the text.
 
 **Alternatives considered**:
-- **A `::before` pseudo-element with `position: absolute`**: needs `position: relative` on the
-  container, a height of 100%, and a lifetime tied to a generated box. If the page sets
-  `box-sizing`, `overflow` or a transform on an ancestor, the rule can detach from the block. More
-  moving parts for the same picture.
-- **A dashed background gradient**: true dash rhythm depends on background-size rounding, and the
-  gradient repeats vertically only by accident. Fragile at fractional zoom levels.
-- **A sibling element**: another node to insert, journal and remove, and it needs to be sized to the
-  translation — the exact measurement the border avoids.
-- **SVG**: correct but heavy: a new node, namespace handling, and no forced-colors benefit.
+- **A full-width `border-block-start` on the container** (the previous pass): it spans the whole column,
+  which is exactly the page-furniture look the requester rejected.
+- **A vertical rule on the inline-start edge** (the first attempt): rejected by the product owner; it
+  also competes with Quote.
+- **A real child element**: another node to insert, journal, size and remove; the generated box needs
+  none of that.
+- **A dashed background gradient**: true dash rhythm depends on background-size rounding and changes
+  with zoom; the border pattern is deterministic.
+- **A full-width line with a fixed dash count**: would need dash lengths around 45 px per segment,
+  which reads as a rule rather than the reference's small mark.
 
-**Consequence recorded in the contract**: the rule's thickness is a hairline (1 CSS px), its dash
-pattern is the platform's dashed border (so it is not customised per browser), and the text is not
-italic or indented beyond the padding gap.
-
----
-
+**Consequence recorded in the contract**: the line is short (88 px, about fifteen dashes), horizontal,
+left-aligned at the block's inline-start, and never a full-width rule.
 ## R2 — Establishing the translation's direction for RTL targets
 
 **Decision**: Add `src/shared/direction.ts` with `isRtlLanguage(lang)` over the right-to-left
@@ -49,10 +46,9 @@ language is RTL. For non-RTL targets no `dir` is written, so the block keeps inh
 direction. `setTargetLang` updates the attribute for existing blocks.
 
 **Rationale**:
-- The feature contract requires the rule on the **right** edge for an RTL target language (SC-002),
-  including when the source page is LTR. CSS logical properties resolve against the element's
-  *computed* direction; without this, an Arabic translation of an English article would put the rule
-  on the left.
+- A translation must read in its own direction even when the source page is LTR: an Arabic or Hebrew
+  translation on an English article otherwise inherits a left-to-right base direction, which affects
+  punctuation, list markers and alignment (SC-002).
 - An explicit language-derived direction is deterministic. It is also the correct base direction for
   the translation text itself (punctuation, list markers, alignment), which improves Quote as well.
 - The attribute is journaled once per block, so exact restore removes it.
@@ -197,29 +193,26 @@ resolved typography through `JobOptions.typography`.
 
 ## R7 — Preview icon for the new Divider
 
-**Decision**: Reuse the existing `bar` mark and let it honour the descriptor's `pattern`: marker
-`{ mark: "bar", pattern: "dashed" }` draws a thin dashed vertical line on the leading edge of the
-icon; Quote keeps `{ mark: "bar" }` and draws the thick solid bar. The icon's text bars keep the
-same leading offset as Quote, so the difference is thickness + dash pattern, not position.
+**Decision**: Keep the `rule` mark and let it honour the descriptor's `pattern`: the marker
+`{ mark: "rule", pattern: "dashed" }` draws a short dashed horizontal line (about nine of the
+viewBox's twenty-four units) above the icon's text bars. Quote keeps `{ mark: "bar" }` and draws the
+thick solid vertical bar.
 
 **Rationale**:
-- The generator stays a pure function of the catalogue descriptor (FR-007's "icon cannot drift from
-  the treatment it names").
-- `bar` is already the "vertical rule on the leading edge" mark; the divider now uses exactly that
-  geometry, differing only in pattern and weight — which is also the distinction on the page.
-- At 16 px a 1.2 px dashed stroke against a 2.6 px filled bar remains legible and pairwise distinct.
+- The generator stays a pure function of the catalogue descriptor (FR-007's "icon cannot drift from the
+  treatment it names").
+- A short dashed line mirrors the page treatment exactly: same orientation, same short length, same
+  dash rhythm.
+- At 16 px the mark stays legible and is unmistakably different from Quote's vertical solid bar and
+  from the underline marks below the text.
 
 **Alternatives considered**:
-- **A new `edge` mark**: enum churn for a shape the `bar` mark already expresses; also needs a
-  second bar-offset rule in the icon builder.
-- **Keeping the horizontal-rule icon**: would advertise the appearance we are removing (violates
-  FR-007 and the spec's preview requirement).
+- **A full-width icon rule**: advertises the design the product owner rejected.
+- **The `bar` mark with a dash pattern** (the vertical attempt): looks like Quote and advertises the
+  rejected edge rule.
 - **A tiny screenshot-style raster**: forbidden by the icon contract (vector, currentColor).
 
 **Tie to requirements**: FR-007; SC-003.
-
----
-
 ## R8 — Contrast, forced colours, motion and accessibility
 
 **Decision**:
@@ -253,7 +246,7 @@ a custom tooltip-only error (inaccessible).
   on restore; divider — text styling untouched, only the container is styled, switching is
   journal-stable. jsdom does not compute the stylesheet, so DOM tests assert the inline declarations
   the renderer writes, not painted geometry.
-- **E2E (real Chromium)**: computed-style geometry for the divider (inline-start border present,
+- **E2E (real Chromium)**: computed-style geometry for the divider (block-start border present,
   block-start border absent, rule height/coverage); typography save → live restyle within 1 s with
   0 provider requests; persistence across reload/new tab; invalid font and size refusals; reset;
   live sample reflecting saved values; RTL target puts the rule on the right.

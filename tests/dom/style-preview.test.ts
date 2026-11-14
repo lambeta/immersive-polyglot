@@ -51,7 +51,7 @@ describe("style preview icons (FR-007, FR-008, FR-010)", () => {
   });
 });
 describe("divider preview icon (feature 004)", () => {
-  it("draws a thin dashed vertical stroke, not a horizontal rule", () => {
+  it("draws a thin dashed horizontal rule above the text bars", () => {
     const icon = previewIcon("divider", document);
     const lines = Array.from(icon.querySelectorAll("line"));
     const dashed = lines.find((line) => line.getAttribute("stroke-dasharray"));
@@ -62,23 +62,22 @@ describe("divider preview icon (feature 004)", () => {
     const x2 = Number(dashed?.getAttribute("x2"));
     const y1 = Number(dashed?.getAttribute("y1"));
     const y2 = Number(dashed?.getAttribute("y2"));
-    expect(Math.abs(y2 - y1)).toBeGreaterThan(Math.abs(x2 - x1));
+    expect(Math.abs(x2 - x1)).toBeGreaterThan(Math.abs(y2 - y1));
+    expect(Math.max(y1, y2)).toBeLessThan(8);
+    // A short stubbed rule, not the block's full width: roughly fifteen dashes on the page.
+    expect(Math.abs(x2 - x1)).toBeGreaterThan(6);
+    expect(Math.abs(x2 - x1)).toBeLessThan(14);
 
+    // No vertical stroke: that is Quote's mark, and the two must stay distinguishable at 16px.
     for (const line of lines) {
       const dx = Math.abs(Number(line.getAttribute("x2")) - Number(line.getAttribute("x1")));
       const dy = Math.abs(Number(line.getAttribute("y2")) - Number(line.getAttribute("y1")));
-      expect(dx, "no horizontal line in the divider icon").toBeLessThan(dy);
+      expect(dx, "no vertical line in the divider icon").toBeGreaterThanOrEqual(dy);
     }
   });
 
-  it("is thinner than the quote bar it must be distinguished from", () => {
-    const divider = previewIcon("divider", document);
+  it("keeps Quote free of the dashed rule", () => {
     const quote = previewIcon("quote", document);
-    const dividerStroke = Number(
-      divider.querySelector("line[stroke-dasharray]")?.getAttribute("stroke-width") ?? "0",
-    );
-    const quoteBarWidth = Number(quote.querySelector("rect[fill='currentColor']")?.getAttribute("width") ?? "0");
-    expect(dividerStroke).toBeGreaterThan(0);
-    expect(dividerStroke).toBeLessThanOrEqual(quoteBarWidth / 2);
+    expect(quote.querySelector("line[stroke-dasharray]")).toBeNull();
   });
 });

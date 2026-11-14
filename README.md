@@ -17,7 +17,11 @@ travels only to the endpoint you configure; page text travels only there too.
 - **Fifteen translation display styles.** None, dashed/solid/dotted underline, dashed/solid border,
   blur (study mode), transparency, divider, highlight, marker pen, marker pen 2, quote, weakened and
   gray — each with a generated preview icon, applied live without re-translating, and overridable per
-  site. Choosing **Display** in the options page shows a live sample before you save.
+  site. Divider draws a short dashed line of about fifteen segments just above each translation, never
+  a full-width rule. Choosing **Display** in the options page shows a live sample before you save.
+- **Translations in your reading typeface.** Choose a font-family stack and a size from 50 % to 200 %
+  of each block's original size; translations update in place, the page's own text is untouched, and
+  Reset returns to the page's typography in one click.
 - **Restore exactly.** Turning translation off replays a write journal, so the page returns to its
   original state — not "close to it".
 - **Honest failures.** Every failure has a class, a message and a recovery action. Nothing is ever

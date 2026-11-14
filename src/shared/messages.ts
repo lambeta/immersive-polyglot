@@ -5,6 +5,7 @@ import type {
   JobCounts,
   JobState,
   SessionUsageRecord,
+  TranslationTypography,
 } from "./types.js";
 
 /**
@@ -64,6 +65,8 @@ export type CommandMessage =
   | { type: "setDisplayMode"; mode: DisplayMode }
   | { type: "setDisplayStyle"; style: string }
   | { type: "styleChanged"; style: string }
+  | { type: "typographyChanged"; typography: TranslationTypography }
+  | { type: "setTypography"; typography: TranslationTypography }
   | { type: "getJobStatus" }
   | { type: "jobUpdated"; status: JobStatusPayload }
   | { type: "providerChanged" }
@@ -92,6 +95,8 @@ const COMMAND_TYPES = [
   "setDisplayMode",
   "setDisplayStyle",
   "styleChanged",
+  "typographyChanged",
+  "setTypography",
   "getJobStatus",
   "jobUpdated",
   "providerChanged",
@@ -144,6 +149,27 @@ function requireNumber(payload: Record<string, unknown>, field: string, type: st
     throw new MessageError("invalidPayload", `${type}.${field} must be a number`);
   }
   return value;
+}
+
+/** Feature 004 FR-019: the typography pair travels whole; a partial or mistyped one is refused. */
+function requireTypography(
+  payload: Record<string, unknown>,
+  type: string,
+): TranslationTypography {
+  const value = payload["typography"];
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new MessageError("invalidPayload", `${type}.typography must be an object`);
+  }
+  const record = value as Record<string, unknown>;
+  const fontFamily = record["fontFamily"];
+  if (typeof fontFamily !== "string") {
+    throw new MessageError("invalidPayload", `${type}.typography.fontFamily must be a string`);
+  }
+  const fontScale = record["fontScale"];
+  if (typeof fontScale !== "number" || !Number.isFinite(fontScale)) {
+    throw new MessageError("invalidPayload", `${type}.typography.fontScale must be a finite number`);
+  }
+  return { fontFamily, fontScale };
 }
 
 function requireArray(payload: Record<string, unknown>, field: string, type: string): unknown[] {
@@ -269,6 +295,9 @@ export function parseCommand(raw: unknown): CommandMessage {
       }
       return { type, style };
     }
+    case "typographyChanged":
+    case "setTypography":
+      return { type, typography: requireTypography(payload, type) };
     case "translatePage":
       return typeof payload["providerOverrideId"] === "string" &&
         payload["providerOverrideId"].length > 0

@@ -20,7 +20,7 @@ here so the stylesheet and the icon generator implement the same document.
 | 6 | `blur` | `displayStyleBlur` | The translation text is blurred until revealed. | **yes** |
 | 7 | `transparency` | `displayStyleTransparency` | The translation is rendered semi-transparent until revealed. | **yes** |
 | 8 | `underline-dotted` | `displayStyleUnderlineDotted` | Dotted underline under the translation's text. | no |
-| 9 | `divider` | `displayStyleDivider` | **Superseded by feature 004:** a thin dashed rule down the translation's leading edge, running the block's full height (was: a horizontal rule above the translation). | no |
+| 9 | `divider` | `displayStyleDivider` | **Superseded by feature 004:** a short dashed horizontal line of about fifteen segments just above the translation (was: a horizontal rule above the translation). | no |
 | 10 | `highlight` | `displayStyleHighlight` | A filled background behind the translation's text, larger than the glyphs. | no |
 | 11 | `marker` | `displayStyleMarker` | A marker-pen band across the lower part of the text, as if struck through by a highlighter. | no |
 | 12 | `marker-2` | `displayStyleMarker2` | A second marker treatment: a taller band with a different hue and a slanted edge. | no |
@@ -80,7 +80,7 @@ Each style owns one generated icon. The generator is a pure function of the cata
 | none | two bars, no mark |
 | underline-dashed / solid / dotted | a dashed / solid / dotted line under the lower bar |
 | border-dashed / solid | a dashed / solid rectangle enclosing both bars |
-| divider | **Superseded by feature 004:** a thin dashed vertical rule at the leading edge (was: a horizontal rule above the bars) |
+| divider | **Superseded by feature 004:** a short dashed horizontal line above the bars (was: a horizontal rule above the bars) |
 | highlight | a filled rounded rectangle behind the bars |
 | marker | a translucent lower band across both bars |
 | marker-2 | a taller translucent band with a slanted leading edge, different hue |

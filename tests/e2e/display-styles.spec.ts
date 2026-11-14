@@ -252,7 +252,7 @@ test("a style chosen in the page control applies to this site only (FR-019)", as
     "highlight",
   );
 });
-test("the Divider style paints a leading-edge rule and no horizontal decoration (FR-001, FR-002)", async () => {
+test("the Divider style draws a short dashed line above each translation (FR-001, FR-002)", async () => {
   await seedProvider();
   const pageUrl = pageUrlFor("news-article-a.html");
   const page = await translate(pageUrl);
@@ -270,17 +270,18 @@ test("the Divider style paints a leading-edge rule and no horizontal decoration 
   const metrics = await page.evaluate(() =>
     Array.from(document.querySelectorAll<HTMLElement>('[data-ipt="target"]')).map((element) => {
       const style = getComputedStyle(element);
+      const before = getComputedStyle(element, "::before");
       const rect = element.getBoundingClientRect();
       return {
-        inlineStartWidth: Number.parseFloat(style.borderInlineStartWidth || "0"),
-        inlineStartStyle: style.borderInlineStartStyle,
-        blockStartWidth: Number.parseFloat(style.borderBlockStartWidth || "0"),
-        blockEndWidth: Number.parseFloat(style.borderBlockEndWidth || "0"),
+        display: before.display,
+        width: Number.parseFloat(before.width || "0"),
+        borderStyle: before.borderBlockStartStyle,
+        thickness: Number.parseFloat(before.borderBlockStartWidth || "0"),
+        elementBlockStart: Number.parseFloat(style.borderBlockStartWidth || "0"),
+        elementInlineStart: Number.parseFloat(style.borderInlineStartWidth || "0"),
+        elementBlockEnd: Number.parseFloat(style.borderBlockEndWidth || "0"),
         fontStyle: style.fontStyle,
-        height: rect.height,
-        width: rect.width,
-        // Count the block's real line boxes rather than dividing its height: padding and the rule
-        // itself add height, so a height threshold cannot tell a one-line block from a wrapped one.
+        blockWidth: rect.width,
         lineCount: (() => {
           const range = document.createRange();
           range.selectNodeContents(element);
@@ -292,21 +293,24 @@ test("the Divider style paints a leading-edge rule and no horizontal decoration 
 
   expect(metrics.length).toBeGreaterThanOrEqual(3);
   for (const metric of metrics) {
-    expect(metric.inlineStartStyle).toBe("dashed");
-    expect(metric.inlineStartWidth).toBeGreaterThan(0);
-    expect(metric.inlineStartWidth).toBeLessThanOrEqual(2);
-    expect(metric.blockStartWidth).toBe(0);
-    expect(metric.blockEndWidth).toBe(0);
+    expect(metric.display).toBe("block");
+    expect(metric.borderStyle).toBe("dashed");
+    expect(metric.thickness).toBeGreaterThan(0);
+    expect(metric.thickness).toBeLessThanOrEqual(2);
+    // A short stubbed line: roughly fifteen dashes, never the block's full width and never a stub
+    // of one or two dashes.
+    expect(metric.width).toBeGreaterThan(60);
+    expect(metric.width).toBeLessThanOrEqual(90);
+    expect(metric.width).toBeLessThan(metric.blockWidth * 0.5);
+    // The block itself draws nothing: no edge rule, no bottom rule.
+    expect(metric.elementBlockStart).toBe(0);
+    expect(metric.elementInlineStart).toBe(0);
+    expect(metric.elementBlockEnd).toBe(0);
     expect(metric.fontStyle).not.toBe("italic");
-    expect(metric.width).toBeGreaterThan(metric.inlineStartWidth);
   }
-  // At least one multi-line paragraph: the rule spans every line of the block, not one stub.
-  expect(
-    metrics.some((metric) => metric.lineCount >= 3),
-    JSON.stringify(metrics.map((metric) => ({ height: metric.height, lines: metric.lineCount }))),
-  ).toBe(true);
+  expect(metrics.some((metric) => metric.lineCount >= 3)).toBe(true);
 
-  // The rule stays attached when the display mode changes, and no request is issued.
+  // The line stays attached when the display mode changes, and no request is issued.
   for (const mode of ["above", "only"] as const) {
     await sendToTab(extension, pageUrl, { type: "setDisplayMode", mode });
     await expect
@@ -314,7 +318,10 @@ test("the Divider style paints a leading-edge rule and no horizontal decoration 
         page
           .locator('[data-ipt="target"]')
           .first()
-          .evaluate((element) => getComputedStyle(element as HTMLElement).borderInlineStartStyle),
+          .evaluate(
+            (element) =>
+              getComputedStyle(element as HTMLElement, "::before").borderBlockStartStyle,
+          ),
       )
       .toBe("dashed");
   }

@@ -10,42 +10,44 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - The Divider style marks where the translation starts, not with a stray line (Priority: P1)
+### User Story 1 - The Divider style separates the translation with a real divider (Priority: P1)
 
-A reader turns on the Divider display style expecting each translation to be marked as a
-self-contained block. Today the translation carries a full-column horizontal rule across its top,
-which reads as a page-authored separator; the reference product instead draws a very short dashed
-stub that looks like a stray mark. The reader wants a divider that belongs to the translation: a
-thin dashed rule running down the translation's leading edge, the full height of the block, that
-is unmistakably part of the translation and never a horizontal separator.
+A reader turns on the Divider display style expecting each translation to be introduced by a small
+divider. A full-column rule reads like page-authored furniture, and a rule down the block's edge
+competes with the Quote style. What the reader wants — and what the reference product draws — is a
+short dashed horizontal line of about fifteen segments sitting directly above the translation: clearly
+part of the translation, and never mistaken for a page separator.
 
-**Why this priority**: This is the defect the request opens with. A divider that looks like page
-furniture makes every bilingual page noisier rather than clearer, and it can be confused with the
-Quote style. Until this is fixed the style fails its only job.
+**Why this priority**: This is the defect the request opens with. The divider must look like a small
+mark that belongs to the translation, not like a page rule; until it does, the style fails its only
+job.
 
 **Independent Test**: Translate an article in bilingual mode, select Divider, and inspect each
-translated block: a dashed vertical rule runs along the leading edge for the block's full height,
-no horizontal rule appears anywhere in the block, the text itself is unchanged, and the same holds
+translated block: a short dashed horizontal line of about fifteen segments sits just above the
+translation, no rule runs down either side or below, the text itself is unchanged, and the same holds
 after switching to "translation above" and "translation only" modes without re-translating.
 
 **Acceptance Scenarios**:
 
 1. **Given** a page translated with the Divider style, **When** the reader inspects any translated
-   block, **Then** exactly one dashed rule is drawn along the block's leading edge, spanning its
-   full height, and no rule crosses the block's top, bottom, or text lines.
-2. **Given** a translation longer than its source (for example a paragraph 30% longer), **When** it
-   is rendered, **Then** the rule spans the whole rendered block without clipping, overlap, or
-   shortening, and the text is not pushed out of the block.
+   block, **Then** exactly one short dashed horizontal line of about fifteen segments is drawn just
+   above the translation, narrower than half the block's width, and no rule runs down either side or
+   below the block.
+2. **Given** a translation longer than its source (for example a paragraph 30% longer), **When** it is
+   rendered, **Then** the line keeps its short length and its position above the block while the text
+   wraps normally, without clipping or overlap.
 3. **Given** the Divider style, **When** the reader switches between "translation below", "above",
-   and "replacing the source", **Then** the rule stays attached to the translation in every mode
-   and no translation request is made again.
-4. **Given** a right-to-left target language, **When** a translation is rendered, **Then** the rule
-   appears on the right edge and the text keeps its correct reading direction.
-5. **Given** a page with a dark or tinted background, **When** the Divider style is shown, **Then**
-   the rule uses the translation's text colour and remains visible against that background.
-6. **Given** the Divider and Quote styles side by side on the same page, **When** the reader
-   compares them, **Then** Quote is a thick solid bar with italic, indented text while Divider is a
-   thin dashed rule with the text's own styling, and the two cannot be mistaken for each other.
+   and "replacing the source", **Then** the line stays attached to the translation in every mode and
+   no translation request is made again.
+4. **Given** a right-to-left target language, **When** a translation is rendered, **Then** the text
+   keeps its correct reading direction and the short horizontal line stays at the translation's
+   inline-start.
+5. **Given** a page with a dark or tinted background, **When** the Divider style is shown, **Then** the
+   line uses the translation's text colour and remains visible against that background.
+6. **Given** the Divider and Quote styles side by side on the same page, **When** the reader compares
+   them, **Then** Quote is a thick solid vertical bar with italic, indented text while Divider is a
+   short horizontal dashed line with the text's own styling, and the two cannot be mistaken for each
+   other.
 
 ---
 
@@ -99,7 +101,7 @@ chosen typeface and size, so the decision is made by sight and not by guessing.
 to typography keeps the settings honest and prevents trial-and-error on real pages.
 
 **Independent Test**: On the Display settings page, select Divider, type a font family and change
-the size: the sample updates immediately to show the vertical dashed rule in the chosen typeface and
+the size: the sample updates immediately to show the dashed rule in the chosen typeface and
 size; navigating away without saving leaves both the sample and the stored settings unchanged.
 
 **Acceptance Scenarios**:
@@ -149,25 +151,28 @@ size; navigating away without saving leaves both the sample and the stored setti
 
 **Divider presentation**
 
-- **FR-001**: The Divider style MUST mark every translated block with a dashed rule along the
-  block's leading edge — left for left-to-right text, right for right-to-left text — spanning the
-  block's full height and every one of its lines.
-- **FR-002**: The Divider style MUST NOT draw a rule across the top, bottom, or between lines of a
-  translated block, and MUST NOT draw a fixed-width stub that stops short of the block's height.
-- **FR-003**: The rule MUST be visually thin (a hairline relative to the text) and clearly dashed;
-  it MUST take the translation's text colour and reach at least 3:1 non-text contrast against the
+- **FR-001**: The Divider style MUST mark every translated block with one short dashed horizontal line
+  of about fifteen segments (roughly 88 px at default zoom) sitting just above the translation, at the
+  boundary between the source and the translated block.
+- **FR-002**: The Divider style MUST NOT draw the line across the block's full width, MUST NOT draw a
+  rule along the block's leading or trailing edge, MUST NOT draw a rule below the translation, and
+  MUST NOT collapse the line to a stub of one or two dashes.
+- **FR-003**: The line MUST be visually thin (a hairline relative to the text) and clearly dashed; it
+  MUST take the translation's text colour and reach at least 3:1 non-text contrast against the
   background directly behind it on light, tinted, dark, and image-backed pages.
-- **FR-004**: The Divider style MUST leave the translation's font family, style, weight, alignment
-  and colour unchanged, and MUST NOT indent the text by more than one character's width.
-- **FR-005**: The rule MUST stay attached to the translation in every display mode (below the
-  source, above it, or replacing it) and across every mode change.
-- **FR-006**: Divider and Quote MUST remain visually distinct: Quote keeps its thick solid bar and
-  italic, indented text; Divider uses a thin dashed rule and leaves text styling untouched.
-- **FR-007**: The Divider entry's preview icon and the live sample MUST show a leading-edge vertical
-  dashed rule at the same relative thickness and shape as the rendered translation, and MUST NOT
-  show a horizontal stub. The icon MUST remain legible at 16 px and at 200% zoom.
-- **FR-008**: Switching to or away from Divider MUST restyle translations already on the page
-  without requesting translation again and without a reload.
+- **FR-004**: The Divider style MUST leave the translation's font family, style, weight, alignment and
+  colour unchanged, and MUST NOT indent the text.
+- **FR-005**: The rule MUST stay attached to the translation in every display mode (below the source,
+  above it, or replacing it) and across every mode change.
+- **FR-006**: Divider and Quote MUST remain visually distinct: Quote keeps its thick solid vertical bar
+  and italic, indented text; Divider uses a short horizontal dashed line and leaves text styling
+  untouched. Divider MUST also differ from the underline styles, which decorate the text itself rather
+  than introduce the block.
+- **FR-007**: The Divider entry's preview icon and the live sample MUST show a short horizontal dashed
+  line of about fifteen segments, at the same relative thickness as the rendered translation, and MUST
+  NOT show a vertical bar or a full-width rule. The icon MUST remain legible at 16 px and at 200% zoom.
+- **FR-008**: Switching to or away from Divider MUST restyle translations already on the page without
+  requesting translation again and without a reload.
 
 **Translation typography**
 
@@ -220,9 +225,9 @@ size; navigating away without saving leaves both the sample and the stored setti
 - **Typography preference**: The reader's device-wide translation typeface and size choice. Holds an
   optional font-family stack (empty means inherit the page's font) and a size scale between 50% and
   200% (default 100%). One preference per profile; it is not per site and not per language.
-- **Display style entry (Divider)**: The catalogue entry for the Divider style, whose treatment is
-  redefined from "horizontal rule above the translation" to "thin dashed rule on the translation's
-  leading edge", together with the matching preview icon so the icon and the rendering cannot drift.
+- **Display style entry (Divider)**: The catalogue entry for the Divider style, whose treatment is a
+  short dashed horizontal line of about fifteen segments above the translation, together with the
+  matching preview icon so the icon and the rendering cannot drift.
 - **Translation block**: An extension-owned rendered translation; it carries the optional typography
   override and the Divider decoration, and both must be fully removable on restore.
 - **Preview sample**: The settings-page sample line that previews the current style, family, and
@@ -233,13 +238,15 @@ size; navigating away without saving leaves both the sample and the stored setti
 ### Measurable Outcomes
 
 - **SC-001**: On a fixture article with at least 20 translated blocks, 100% of Divider-styled blocks
-  show exactly one dashed rule on the leading edge, at least 90% of the block's height and no wider
-  than a hairline; zero horizontal decoration appears above, below, or between translated lines.
-- **SC-002**: With an RTL target language, 100% of Divider rules appear on the right edge, with text
-  direction unaffected.
-- **SC-003**: Across the fifteen styles, every pair remains distinguishable: the Divider rule is
-  dashed and at most half the thickness of Quote's solid bar, and Quote's text is italic while
-  Divider's text is not. No two styles produce identical geometry and typography.
+  show exactly one short dashed horizontal line above the translation, measured between 60 px and
+  90 px (about fifteen segments) and no thicker than a hairline; zero decoration spans the block's
+  full width, appears along either edge, or appears below the translation.
+- **SC-002**: With an RTL target language, 100% of translations render with the correct reading
+  direction and 100% of Divider lines remain the same short horizontal segment at the translation's
+  inline-start.
+- **SC-003**: Across the fifteen styles, every pair remains distinguishable: the Divider line is
+  horizontal, dashed, short, and at most half the thickness of Quote's vertical solid bar, and Quote's
+  text is italic while Divider's text is not.
 - **SC-004**: Applying a font family or size change to a page with at least 10 rendered blocks
   updates all translations within 1 second and produces 0 new translation requests.
 - **SC-005**: With default settings, 100% of translation blocks render in the same typeface and size
@@ -266,8 +273,8 @@ size; navigating away without saving leaves both the sample and the stored setti
   never downloads fonts and only uses fonts already available to the browser.
 - The default remains "keep the page's font at 100%", so profiles created before this feature look
   exactly the same afterwards.
-- The divider's leading edge follows the translation's writing direction, so an RTL target mirrors
-  the rule.
+- The divider is a short horizontal line that follows the block's direction: it sits at the
+  inline-start (left in LTR, right in RTL) and keeps its ~15 dashes either way.
 - Display styles continue to resolve per site as they do today; typography is one device-wide
   preference.
 - The existing display-style preview, the live restyle of translations already on the page, and the

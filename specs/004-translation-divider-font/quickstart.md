@@ -36,19 +36,20 @@ must stay above the 0.5 % pixel-difference threshold (see research R9).
 
 ---
 
-## Scenario 1 — Divider is a leading-edge rule, not a horizontal line
+## Scenario 1 — Divider is a short dashed line above the translation
 
 1. Build and load `dist/` as an unpacked extension (or open the dev provider page).
 2. Translate a long article with the local provider.
 3. Open the extension's options page → **Display**, select **Divider**, save.
 4. Inspect the translated blocks.
 
-**Expected**: each translation shows a thin dashed vertical rule down its leading edge, running the
-block's full height; nothing appears above, below or between the translated lines; the translated
-text is not italic and keeps its normal indentation except for the small gap after the rule.
+**Expected**: each translation is introduced by a short dashed horizontal line of about fifteen
+segments (around 88 px) sitting just above it; the line starts at the block's inline-start; nothing
+spans the column, runs down an edge, or appears below the translation; the text is not italic and is
+not indented.
 
-**Fails if**: the rule is horizontal, dashed and only a few characters wide, or a full-width solid
-line.
+**Fails if**: the line spans the whole column, runs vertically along an edge, or shrinks to one or two
+dashes.
 
 ---
 
@@ -58,9 +59,9 @@ line.
    "translation only"; do not re-translate.
 2. Open `tests/fixtures/pages/docs-rtl.html` (or any Arabic/Hebrew target setup) and translate.
 
-**Expected**: the rule stays attached to the translation in all three modes; on the RTL page the
-rule appears on the right edge and the text reads right-to-left. No provider request is issued when
-only the mode or style changes.
+**Expected**: the short line stays directly above the translation in all three modes; on the RTL page
+the text reads right-to-left and the line moves to the inline-start (the right edge). No provider
+request is issued when only the mode or style changes.
 
 ---
 
@@ -72,7 +73,7 @@ only the mode or style changes.
 3. Before saving, watch the live sample.
 
 **Expected**: the sample updates immediately to show the entered family at 125 %, with the Divider
-rule. Saving applies the same family and a 25 % larger size to every translated block on open pages
+line. Saving applies the same family and a 25 % larger size to every translated block on open pages
 within a second, headings stay larger than body text, and no new translation request is made.
 
 ---
@@ -134,8 +135,9 @@ unchanged DOM hash.
 
 | Symptom | Likely cause |
 |---|---|
-| Rule appears on the left for an RTL target | `dir` not applied: check the target-language classifier and the container attribute. |
-| Rule looks like Quote | The dashed/hairline rule was replaced by a solid bar, or the text became italic; only Divider's inline-start border may change. |
+| Line spans the whole column | A container border was reintroduced; only the short `::before` line may draw Divider. |
+| Line runs down one side | A leading-edge border was reintroduced; Divider is a horizontal line above the block. |
+| Line looks like Quote | The dashed line became a solid vertical bar, or the translation became italic. |
 | Typography applies to the source text | The declaration was written to the wrong node; only `[data-ipt="target"]` may receive it. |
 | Size change flattens headings | The scale was applied as a percentage of the parent instead of against the captured source pixel size. |
 | Sample and page disagree | The sample bypassed the shared resolver or did not receive the entered values. |

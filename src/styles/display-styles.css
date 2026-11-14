@@ -45,9 +45,15 @@
 
 /* --- rules and marks ------------------------------------------------------- */
 
-[data-ipt-style="divider"] {
-  border-inline-start: 1px dashed currentColor;
-  padding-inline-start: 0.55em;
+/* A short dashed line, not a full-width rule: 88px of the platform's 1px dash pattern is
+   about fifteen segments, which is the divider the reference product draws. */
+[data-ipt-style="divider"]::before {
+  content: "";
+  display: block;
+  width: 88px;
+  max-width: 50%;
+  border-block-start: 1px dashed currentColor;
+  margin-block-end: 0.4em;
 }
 
 [data-ipt-style="highlight"] {

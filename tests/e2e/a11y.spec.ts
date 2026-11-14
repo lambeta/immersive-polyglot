@@ -253,3 +253,30 @@ test("gray and weakened keep 4.5:1 contrast on light, dark, tinted and mid-gray 
     await page.close();
   }
 });
+test("the typography controls are keyboard operable and announce a refusal at 200% zoom (FR-023, SC-010)", async () => {
+  const options = await extension.openOptions();
+  await options.click('button[aria-controls="panel-display"]');
+
+  // Keyboard only: focus the family field, type, then the size field, type, then Enter on Save.
+  await options.locator("#translation-font-family").focus();
+  await options.keyboard.type("Arial; color:red");
+  await options.locator("#translation-font-scale").focus();
+  await options.keyboard.press("ControlOrMeta+A");
+  await options.keyboard.type("999");
+  await options.locator("#display-style-save").focus();
+  await options.keyboard.press("Enter");
+
+  // The refusal is visible, associated with the field, and announced through the status region.
+  await expect(options.locator("#display-style-feedback")).toContainText("semicolons");
+  await expect(options.locator("#error-fontFamily")).toContainText("font-family");
+  await expect(options.locator("#translation-font-family")).toHaveAttribute("aria-invalid", "true");
+
+  // At 200% zoom the new controls wrap instead of overflowing the panel.
+  await options.evaluate(() => {
+    document.body.style.zoom = "2";
+  });
+  const overflow = await options
+    .locator("#panel-display")
+    .evaluate((element) => element.scrollWidth - element.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});

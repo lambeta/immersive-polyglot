@@ -2,31 +2,34 @@
 
 **Feature**: [spec.md](../spec.md) | **Data model**: [data-model.md](../data-model.md) | **Date**: 2026-11-14
 
-This contract is normative for FR-001 through FR-008. It supersedes feature 002's catalogue entry
-for Divider in `specs/002-translation-display-styles/contracts/display-style-catalog.md` (the
-description row and the icon-shape row), because that entry describes a horizontal rule above the
-translation, which this feature removes.
+This contract is normative for FR-001 through FR-008. It supersedes feature 002's catalogue entry for
+Divider in `specs/002-translation-display-styles/contracts/display-style-catalog.md` (the description
+row and the icon-shape row), because that entry describes a full-width rule where this feature ships a
+short dashed line.
 
 ---
 
 ## 1. Treatment (normative)
 
-The Divider style decorates the translated block with exactly one rule, on the block's **logical
-inline-start edge**, and nothing else:
+The Divider style introduces the translated block with exactly one short dashed horizontal line above
+it — never a full-width rule and never a line down an edge:
 
 ```css
-[data-ipt-style="divider"] {
-  border-inline-start: 1px dashed currentColor;
-  padding-inline-start: 0.55em;
+[data-ipt-style="divider"]::before {
+  content: "";
+  display: block;
+  width: 88px;
+  max-width: 50%;
+  border-block-start: 1px dashed currentColor;
+  margin-block-end: 0.4em;
 }
 ```
 
-- The previous declarations (`border-block-start: 1px solid currentColor` and
-  `padding-block-start: 0.4em`) are removed.
-- No other property may be used to draw the rule: no pseudo-element, no background image, no extra
-  node.
-- The translation's own text styling is untouched: no italic, no indent beyond the inline padding,
-  no family/size/weight/alignment change (FR-004, FR-006).
+- The line is short: about fifteen dash segments at the platform's 1 px dash pattern (88 px), and at
+  most half the block's width on very narrow blocks.
+- No other property may draw the line: no background image, no extra node, no page-authored element.
+- The translation's own text styling is untouched: no italic, no inline indent, no
+  family/size/weight/alignment change (FR-004, FR-006).
 
 ---
 
@@ -34,27 +37,22 @@ inline-start edge**, and nothing else:
 
 | Property | Required outcome |
 |---|---|
-| Orientation | Vertical: the rule's rendered height is far greater than its width. |
-| Width | A hairline: 1 CSS px at 100 % zoom, and never more than 2 CSS px. |
-| Height | Spans the translated block's rendered height: `height(rule) ≥ 0.9 × height(block)`, for a one-line heading as well as a multi-line paragraph. |
-| Position | At the block's inline-start edge; the text begins one small gap after it (0.55em). |
-| Block decoration | Zero: `border-block-start-width`, `border-block-end-width` and any pseudo-element decoration are 0/none. A rule above, below or between lines is a defect. |
-| Stub | None: no fixed-width segment of roughly 10 % of the column. |
-
-The rule must not change the block's display type, position, float, writing mode or width beyond the
-inline padding; the page must not gain a horizontal scrollbar.
+| Orientation | Horizontal: the line's width is far greater than its thickness. |
+| Length | Short and fixed: measured width between 60 px and 90 px at default zoom (about fifteen dashes), never more than half the block's width, and never a stub of one or two dashes. |
+| Thickness | A hairline: 1 CSS px at 100 % zoom, and never more than 2 CSS px. |
+| Position | Immediately above the translated text, at the block's inline-start (left in LTR, right in RTL), with one small gap below it. |
+| Block decoration | Zero: no border on the block itself, no full-width rule, no rule along an edge, no rule below the text. |
+| Placement | Does not change the block's display type, position, float, writing mode or width; no horizontal scrollbar. |
 
 ---
 
 ## 3. Direction and language
 
-- The rule's side is decided by CSS logical properties against the translation block's computed
-  direction: left for LTR, right for RTL.
-- The renderer writes `dir="rtl"` on the translation when the block's target language is RTL
+- The line is block-level decoration: it starts at the translation's inline-start and therefore sits on
+  the left in LTR and on the right in RTL, keeping its short length either way.
+- Independently, the renderer writes `dir="rtl"` on a translation whose target language is RTL
   (see [typography-settings.md](./typography-settings.md) section 4.4 and the shared
-  `isRtlLanguage` helper). For non-RTL targets it removes the attribute and the block inherits the
-  page's direction.
-- This makes the rule mirror for an RTL target on an LTR page, not only on an RTL page.
+  `isRtlLanguage` helper), so the translated text reads in the correct direction.
 
 ---
 
@@ -62,26 +60,25 @@ inline padding; the page must not gain a horizontal scrollbar.
 
 | Situation | Required behaviour |
 |---|---|
-| Translation below the source (default) | Rule on the translation's leading edge, between source and translation. |
-| Translation above the source | Rule travels with the translation; still on its leading edge. |
-| Translation only (source hidden) | Rule remains, identifying the translation block. |
-| Source is a list item, table cell, caption, definition list term/description | The translation block sits inside that container; the rule draws on the block's leading edge without breaking the marker, cell borders or list geometry. |
-| Translation longer than the source | The rule covers the whole rendered block; no clipping, no overflow, no shortening. |
-| Single short word | The rule still spans the one line's height; it does not collapse to a dot. |
+| Translation below the source (default) | The line sits between the source block and the translation. |
+| Translation above the source | The line travels with the translation and stays directly above it. |
+| Translation only (source hidden) | The line remains, introducing the translation from the surrounding page content. |
+| Source is a list item, table cell, caption, definition-list term/description | The line sits above the translation block inside that container without breaking the marker, cell borders or list geometry. |
+| Translation longer than the source | The line keeps its short length and position while the text wraps normally. |
+| Single short word | The line keeps its short length; it does not collapse to a dot or a stub. |
 
 ---
 
 ## 5. Colour, forced colours, motion and zoom
 
-- `currentColor` ties the rule to the translation's text colour, so it inherits every contrast
+- `currentColor` ties the line to the translation's text colour, so it inherits every contrast
   correction the existing foreground policy makes. Non-text contrast against the immediate backdrop
   must be ≥ 3:1 (FR-003).
-- Under `@media (forced-colors: active)` the existing rule maps the divider's border colour to
-  `CanvasText` and keeps the dashed pattern; the rule must remain visible and the style must not be
-  carried by colour alone.
+- Under `@media (forced-colors: active)` the line uses the forced text colour and keeps its dashed
+  pattern; it must remain visible and the style must not be carried by colour alone.
 - No transition or animation is introduced; reduced motion needs no change.
-- At 200 % zoom the rule stays a hairline, the block does not clip, and the layout matrix still
-  reports no overlap and no horizontal scroll.
+- At 200 % zoom the line keeps its 88 px short length, the block does not clip, and the layout matrix
+  still reports no overlap and no horizontal scroll.
 
 ---
 
@@ -89,31 +86,30 @@ inline padding; the page must not gain a horizontal scrollbar.
 
 | Aspect | Contract |
 |---|---|
-| Descriptor | `{ mark: "bar", pattern: "dashed" }` in `src/shared/display-styles.ts`. |
-| Mark | A thin dashed vertical stroke on the icon's leading edge (leading edge = left in the LTR-rendered picker), in `currentColor`. |
-| Bars | The same abstract text bars and leading offset as Quote, so the pair differs by stroke weight and dash pattern, not by position. |
-| Weight | The stroke is at most half the thickness of Quote's solid bar. |
+| Descriptor | `{ mark: "rule", pattern: "dashed" }` in `src/shared/display-styles.ts`. |
+| Mark | A short dashed horizontal line above the icon's text bars, in `currentColor`, roughly nine of the viewBox's twenty-four units wide (not the full width). |
+| Bars | The same abstract text bars as every other non-bar icon. |
+| Weight | A hairline: at most 1.6 px stroke in the 24×16 viewBox. |
 | Size | Legible and unclipped at 16 px and at 200 % UI zoom; vector, no raster, no external request. |
 | Semantics | `role="img"` with an accessible name equal to the localised style name; the decorative layer is hidden from assistive technology. |
-| Drift guard | The `"rule"` mark is removed from the type union together with its draw branch, and the icon test asserts that no catalogue entry references it. |
+| Distinction | Quote keeps its solid vertical bar mark; no other style draws a dashed line above the bars. |
 
 ---
 
 ## 7. Live sample
 
 The options page's sample element carries the same `data-ipt-style` value and the same stylesheet as
-the injected rendering (the build copies `display-styles.css` into both UI bundles). Selecting
-Divider must therefore show the vertical dashed rule in the sample, with no separate sample-only
-rule to drift.
+the injected rendering (the build copies `display-styles.css` into both UI bundles). Selecting Divider
+must therefore show the short dashed line in the sample, with no separate sample-only rule to drift.
 
 ---
 
 ## 8. Restoration
 
-The treatment is pure CSS on a container the product owns, plus the journaled `dir` attribute. It
-adds no nodes and no attributes of its own. Removing the translation removes the rule completely:
-the restored DOM hash must equal the pre-translation hash, and no `data-ipt-style`, `border` or `dir`
-residue may remain on page-authored elements (FR-024, SC-009).
+The treatment is pure CSS (one generated box) on a container the product owns, plus the journaled
+`dir` attribute. It adds no nodes and no attributes of its own. Removing the translation removes the
+line completely: the restored DOM hash must equal the pre-translation hash, and no `data-ipt-style`,
+`border` or `dir` residue may remain on page-authored elements (FR-024, SC-009).
 
 ---
 
@@ -121,9 +117,9 @@ residue may remain on page-authored elements (FR-024, SC-009).
 
 | Obligation | Test |
 |---|---|
-| No block rule; inline-start dashed rule; hairline width; full-height coverage; single-line and multi-line | `tests/e2e/display-styles.spec.ts` (computed styles and geometry) |
+| Short dashed line above the translation (60–90 px, about fifteen dashes); no full-width rule; no edge rule; no bottom rule; single-line and wrapped blocks | `tests/e2e/display-styles.spec.ts` (computed pseudo-element geometry) |
 | Text styling untouched; only the container is marked | `tests/dom/renderer-style.test.ts` |
-| RTL target puts the rule on the right | `tests/dom/renderer-typography.test.ts` (dir) and the e2e mode × direction layout matrix |
-| Icon is a dashed vertical mark and differs from Quote | `tests/unit/display-styles.test.ts`, `tests/dom/style-preview.test.ts` |
+| RTL target renders right-to-left with the line at the inline-start | `tests/dom/renderer.test.ts` (dir) and the e2e mode × direction layout matrix |
+| Icon is a short dashed horizontal mark and differs from Quote | `tests/unit/display-styles.test.ts`, `tests/dom/style-preview.test.ts` |
 | Pairwise distinctness of all fifteen styles after the change | `npm run verify:styles` (105 pairs) |
 | Exact restore with Divider active | `tests/dom/restorer.test.ts` and `verify:styles` restore pass |

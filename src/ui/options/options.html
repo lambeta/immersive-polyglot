@@ -259,7 +259,41 @@
         <h2 id="display-heading" data-i18n="displayTitle"></h2>
         <p class="hint" data-i18n="displayStyleHint"></p>
         <div id="display-style-picker"></div>
-        <button type="button" id="display-style-save" data-i18n="displayStyleSave"></button>
+
+        <h3 data-i18n="displayTypographyTitle"></h3>
+        <div class="typography-fields">
+          <div data-field>
+            <label for="translation-font-family" data-i18n="displayFontFamily"></label>
+            <input
+              id="translation-font-family"
+              name="fontFamily"
+              autocomplete="off"
+              aria-describedby="translation-font-family-hint error-fontFamily"
+            />
+            <p class="hint" id="translation-font-family-hint" data-i18n="displayFontFamilyHint"></p>
+            <p class="error" data-field-error id="error-fontFamily"></p>
+          </div>
+          <div data-field>
+            <label for="translation-font-scale" data-i18n="displayFontSize"></label>
+            <input
+              id="translation-font-scale"
+              name="fontScale"
+              type="number"
+              min="50"
+              max="200"
+              step="5"
+              value="100"
+              aria-describedby="translation-font-scale-hint error-fontScale"
+            />
+            <p class="hint" id="translation-font-scale-hint" data-i18n="displayFontSizeHint"></p>
+            <p class="error" data-field-error id="error-fontScale"></p>
+          </div>
+        </div>
+
+        <div class="row">
+          <button type="button" id="display-style-save" data-i18n="displayStyleSave"></button>
+          <button type="button" id="display-typography-reset" data-i18n="displayTypographyReset"></button>
+        </div>
         <p id="display-style-feedback" class="feedback" role="status" aria-live="polite"></p>
       </section>
 

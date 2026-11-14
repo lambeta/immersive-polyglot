@@ -32,8 +32,9 @@
 ## Notes
 
 - Validation pass 1 (2026-11-14): all items pass.
-- Two clarifications were resolved with the requester before writing: the Divider style becomes a
-  thin dashed rule on the translation's leading edge (not a horizontal rule, not a short stub), and
-  typography customisation covers both font family and size.
+- Clarifications were resolved with the requester across the work: the Divider style is a short
+  dashed horizontal line of about fifteen segments above the translation (not a full-width rule, not a
+  stub of one or two dashes, not a line down an edge), and typography customisation covers both font
+  family and size.
 - Scope boundaries are recorded in the spec's Out of Scope section; assumptions are explicit.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`

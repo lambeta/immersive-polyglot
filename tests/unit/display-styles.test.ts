@@ -130,14 +130,16 @@ describe("display style resolution for a host", () => {
   });
 });
 describe("divider descriptor (feature 004)", () => {
-  it("describes a thin dashed leading-edge mark", () => {
+  it("describes a thin dashed rule above the translation", () => {
     const divider = displayStyleById("divider");
-    expect(divider.icon).toEqual({ mark: "bar", pattern: "dashed" });
+    expect(divider.icon).toEqual({ mark: "rule", pattern: "dashed" });
   });
 
-  it("retires the horizontal-rule mark so it cannot come back unseen", () => {
+  it("keeps Quote a solid vertical bar, so the two marks cannot converge", () => {
+    const quote = displayStyleById("quote");
+    expect(quote.icon).toEqual({ mark: "bar" });
     for (const style of DISPLAY_STYLES) {
-      expect(style.icon.mark, style.id).not.toBe("rule");
+      expect(style.icon.mark === "bar" && style.icon.pattern, style.id).not.toBe("dashed");
     }
   });
 });

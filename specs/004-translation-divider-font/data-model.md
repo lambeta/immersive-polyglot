@@ -181,16 +181,16 @@ not grow the journal.
 
 | Aspect | Before (feature 002) | After (feature 004) |
 |---|---|---|
-| Treatment description | "A horizontal rule above the translation, separating it from the source block." | "A thin dashed rule down the translation's leading edge, running the block's full height." |
-| Stylesheet | `border-block-start: 1px solid currentColor; padding-block-start: 0.4em` | `border-inline-start: 1px dashed currentColor; padding-inline-start: 0.55em` |
-| Icon descriptor | `{ mark: "rule" }` | `{ mark: "bar", pattern: "dashed" }` |
-| Icon mark | horizontal line above the text bars | thin dashed vertical line at the leading edge |
-| Behaviour | one rule above each translation | one rule beside each translation, mirrored in RTL |
+| Treatment description | "A horizontal rule above the translation, separating it from the source block." | "A short dashed horizontal line of about fifteen segments just above the translation." |
+| Stylesheet | `border-block-start: 1px solid currentColor; padding-block-start: 0.4em` | `::before { width: 88px; max-width: 50%; border-block-start: 1px dashed currentColor; margin-block-end: 0.4em }` |
+| Icon descriptor | `{ mark: "rule" }` | `{ mark: "rule", pattern: "dashed" }` |
+| Icon mark | horizontal line above the text bars | short dashed horizontal line above the text bars |
+| Behaviour | one rule above each translation | one short dashed line above each translation, starting at the inline-start |
 
 Everything else about the entry (id `divider`, order 8, `nameKey`, `treatment: "divider"`,
-`concealment: false`, `foregroundPolicy: "inherit"`) is unchanged. The `"rule"` mark is removed from
-the icon-mark union along with the descriptor, so no dead code stays behind (principle IV); the icon
-test asserts no catalogue entry references it.
+`concealment: false`, `foregroundPolicy: "inherit"`) is unchanged. The `"rule"` mark stays in the
+icon-mark union and is used only by Divider; Quote keeps the solid `"bar"` mark, and the icon test
+asserts the two cannot converge.
 
 ---
 
@@ -232,10 +232,10 @@ Parsing rules (`parseCommand`):
 
 | # | Invariant | Requirement | Proven by |
 |---|---|---|---|
-| I1 | A translation in Divider style has no top/bottom rule; its decoration is a hairline dashed leading-edge rule spanning the block. | FR-001, FR-002 | e2e computed-style geometry; `verify:styles` |
+| I1 | A translation in Divider style has exactly one short dashed horizontal line above it; no full-width rule, no edge rule, no rule below. | FR-001, FR-002 | e2e computed-style geometry; `verify:styles` |
 | I2 | Divider styling never changes the translation's family, style, weight, alignment or colour. | FR-004, FR-006 | DOM test on inline declarations |
-| I3 | The rule follows the target language's direction and mirrors for RTL. | FR-001, FR-005 | DOM test for `dir`; e2e RTL layout |
-| I4 | Divider preview icon and live sample show a leading-edge dashed rule. | FR-007 | unit icon test; e2e sample assertion |
+| I3 | The rule stays horizontal while an RTL target's text reads right-to-left. | FR-001, FR-005 | DOM test for `dir`; e2e RTL layout |
+| I4 | Divider preview icon and live sample show a short horizontal dashed line. | FR-007 | unit icon test; e2e sample assertion |
 | I5 | Switching styles or typography never requests translation. | FR-008, FR-019 | e2e request counter |
 | I6 | Empty family + scale 100 means "inherit exactly". | FR-009, FR-012 | DOM test (no override declarations); e2e computed equality |
 | I7 | Scale is per block relative to the source size. | FR-010, FR-011 | DOM test with an `h2` and a `p` |

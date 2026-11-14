@@ -332,11 +332,22 @@ function normaliseFontScale(value: unknown): number {
   return Math.min(200, Math.max(50, rounded));
 }
 
-export function resolveTypography(settings: Settings): TranslationTypography {
+/** Makes any untrusted pair safe to consume; the renderer and the message guard both use it. */
+export function sanitiseTypography(value: {
+  fontFamily?: unknown;
+  fontScale?: unknown;
+}): TranslationTypography {
   return {
-    fontFamily: normaliseFontFamily(settings.ui.translationFontFamily),
-    fontScale: normaliseFontScale(settings.ui.translationFontScale),
+    fontFamily: normaliseFontFamily(value.fontFamily),
+    fontScale: normaliseFontScale(value.fontScale),
   };
+}
+
+export function resolveTypography(settings: Settings): TranslationTypography {
+  return sanitiseTypography({
+    fontFamily: settings.ui.translationFontFamily,
+    fontScale: settings.ui.translationFontScale,
+  });
 }
 
 /** The real backend. Only extension contexts have chrome.storage; tests inject their own area. */

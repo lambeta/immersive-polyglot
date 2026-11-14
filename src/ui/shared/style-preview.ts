@@ -114,9 +114,23 @@ function drawMark(doc: Document, icon: DisplayStyleIcon, unique: string): SVGEle
         }),
       );
       break;
+    case "rule": {
+      // Feature 004: Divider is a thin dashed rule across the translation's width, drawn above the
+      // text bars. Quote keeps the vertical bar below, so the two are never mistaken for each other.
+      const line = svgElement(doc, "line", {
+        x1: 4,
+        y1: 2.4,
+        x2: 13.2,
+        y2: 2.4,
+        stroke,
+        "stroke-width": 1.6,
+      });
+      if (dash) line.setAttribute("stroke-dasharray", dash);
+      marks.push(line);
+      break;
+    }
     case "bar":
-      // Quote draws a solid 2.6-wide bar. Divider is the same leading edge with half the weight and
-      // a dash rhythm, so the two are told apart by stroke, never by position (feature 004, FR-007).
+      // Quote draws a solid 2.6-wide vertical bar on the leading edge.
       if (dash) {
         marks.push(
           svgElement(doc, "line", {

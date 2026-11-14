@@ -47,6 +47,14 @@
   color: FieldText;
 }
 
+/* Feature 004: the typography controls sit under the style picker and reflow at 200% zoom. */
+.typography-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+}
+
 :root {
   color-scheme: light dark;
   font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
