@@ -5,17 +5,17 @@ generated from it by `npm run make:icons`; never edit the PNGs by hand.
 
 ## The mark
 
-A gold translation page peeking from behind an off-white reading page. On the front page, a dark
-source line sits above a longer gold marker line: the product's "translation is placed on the page,
-and you can see where" idea in one silhouette. At 16px the eye reads teal tile → light page → gold
-stripe, with no thin strokes or letterforms to dissolve.
+A honey translation page peeking from behind a warm cream reading page. On the front page, a dark
+espresso source line sits above a longer honey marker line: the product's "translation is placed on
+the page, and you can see where" idea in one silhouette. At 16px the eye reads espresso tile → cream
+page → honey stripe, with no thin strokes or letterforms to dissolve.
 
 | Role | Colour |
 |---|---|
-| Tile | `#0A4542` (ink teal) |
-| Page | `#F4F7F6` (off-white) |
-| Source line | `#0A4542` |
-| Translation / marker | `#E4B23C` (warm gold) |
+| Tile | `#3E2418` (espresso) |
+| Page | `#FBF2E4` (warm cream) |
+| Source line | `#3E2418` |
+| Translation / marker | `#E8A63C` (honey) |
 
 The icon is flat vector with a single soft highlight; it is not derived from Immersive Translate's
 logo or any third-party mark, and it uses no system fonts.

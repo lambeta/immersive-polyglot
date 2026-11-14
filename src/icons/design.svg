@@ -7,18 +7,18 @@
   <!-- Dual-layer page (source behind / translation in front) + marker bar.
        Flat vector; no system fonts. -->
   <g clip-path="url(#tileClip)">
-    <rect width="1024" height="1024" fill="#0A4542"/>
+    <rect width="1024" height="1024" fill="#3E2418"/>
 
     <!-- Back page: translation layer peeking (gold) — distinctive stepped silhouette -->
-    <rect x="292" y="268" width="500" height="560" rx="68" ry="68" fill="#E4B23C"/>
+    <rect x="292" y="268" width="500" height="560" rx="68" ry="68" fill="#E8A63C"/>
 
     <!-- Front page: reading surface -->
-    <rect x="220" y="196" width="500" height="560" rx="68" ry="68" fill="#F4F7F6"/>
+    <rect x="220" y="196" width="500" height="560" rx="68" ry="68" fill="#FBF2E4"/>
 
     <!-- Source line -->
-    <rect x="300" y="360" width="260" height="108" rx="54" ry="54" fill="#0A4542"/>
+    <rect x="300" y="360" width="260" height="108" rx="54" ry="54" fill="#3E2418"/>
 
     <!-- In-place marker / translation highlight -->
-    <rect x="300" y="512" width="340" height="120" rx="60" ry="60" fill="#E4B23C"/>
+    <rect x="300" y="512" width="340" height="120" rx="60" ry="60" fill="#E8A63C"/>
   </g>
 </svg>
