@@ -1,24 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
-  <!-- Immersive Polyglot · the page, two languages
-       Upper half: the source, a Latin A. Lower half: the translation, 文.
-       Drawn on the 16px grid so the toolbar size keeps both letters.
-       Cream #F6E6D4 · red #C2353E · ink #3A1814 -->
+  <!-- Immersive Polyglot · A higher on the left, 文 lower on the right.
+       Two arrows between them point both ways: the pair converts either way.
+       A is a step smaller. A: Noto Sans semibold. 文: Noto Sans SC bold.
+       SIL Open Font License.
+       Ground #13501B · lettering #F9F2E0 -->
   <defs>
     <clipPath id="tile">
       <rect width="16" height="16" rx="3.5"/>
     </clipPath>
   </defs>
   <g clip-path="url(#tile)">
-    <rect width="16" height="8" fill="#F6E6D4"/>
-    <rect y="8" width="16" height="8" fill="#C2353E"/>
-    <g fill="none" stroke="#3A1814" stroke-width="1.55" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="3">
-      <path d="M3.15 6.85 L8 1.15 L12.85 6.85"/>
-      <path d="M4.55 4.85 H11.45"/>
-    </g>
-    <g fill="none" stroke="#F6E6D4" stroke-width="1.45" stroke-linecap="butt" stroke-linejoin="miter">
-      <path d="M3.15 9.7 H12.85"/>
-      <path d="M4.7 11.55 L11.3 14.45"/>
-      <path d="M11.3 11.55 L4.7 14.45"/>
-    </g>
+    <rect width="16" height="16" fill="#13501B"/>
+    <path fill="#F9F2E0" d="M6.4 10.53 5.71 8.59H2.99L2.31 10.53H0.9L3.6 3.15H5.11L7.81 10.53ZM4.75 5.63Q4.71 5.51 4.63 5.23Q4.54 4.96 4.47 4.67Q4.39 4.37 4.35 4.21Q4.3 4.43 4.23 4.7Q4.16 4.97 4.1 5.21Q4.03 5.46 3.98 5.63L3.34 7.46H5.38Z"/>
+    <path fill="#F9F2E0" d="M13.07 6.98 14.14 7.27Q13.62 8.85 12.78 10Q11.93 11.14 10.73 11.91Q9.52 12.68 7.93 13.15Q7.88 13.02 7.77 12.84Q7.65 12.66 7.53 12.48Q7.4 12.29 7.3 12.17Q8.84 11.79 9.97 11.13Q11.11 10.46 11.87 9.44Q12.64 8.42 13.07 6.98ZM9.72 7.04Q10.17 8.31 10.96 9.33Q11.75 10.35 12.89 11.06Q14.04 11.77 15.55 12.12Q15.44 12.23 15.31 12.41Q15.17 12.59 15.05 12.77Q14.93 12.95 14.85 13.09Q13.26 12.67 12.1 11.88Q10.93 11.09 10.12 9.95Q9.31 8.81 8.76 7.34ZM7.46 6.5H15.39V7.51H7.46ZM10.65 5.28 11.75 4.95Q11.94 5.25 12.1 5.62Q12.27 6 12.35 6.26L11.18 6.64Q11.11 6.37 10.96 5.98Q10.81 5.6 10.65 5.28Z"/>
+    <path fill="#F9F2E0" d="M7.95 8.83 L8.85 9.15 L7.95 9.47 ZM8.85 9.73 L7.95 10.05 L8.85 10.37 Z"/>
   </g>
 </svg>

@@ -5,19 +5,18 @@ generated from it by `npm run make:icons`; never edit the PNGs by hand.
 
 ## The mark
 
-A page split into the two languages the product puts on screen. The upper half is the source,
-a Latin A. The lower half is the translation, 文. The toolbar icon has no room for the name, so
-the picture itself has to say “this translates a page.”
+A sits higher on the left and 文 sits lower on the right. A is a step smaller. Two small
+arrows between them point opposite ways, so the pair reads as a conversion in either
+direction. The toolbar icon has no room for the name, so the picture itself has to say
+“this translates a page.”
 
 | Role | Colour |
 |---|---|
-| Source ground | `#F6E6D4` (warm cream) |
-| Translation ground | `#C2353E` (warm red) |
-| A | `#3A1814` (warm ink) |
-| 文 | `#F6E6D4` |
+| Ground | `#13501B` |
+| A, arrows, and 文 | `#F9F2E0` |
 
-Flat vector, no face. Drawn on a 16px grid: the A keeps its peak, counter and crossbar, and 文
-keeps the top stroke above the crossing strokes.
+Flat vector, no face. Both letters are the type's own outline: A from Noto Sans, 文 from
+Noto Sans SC (top dot, horizontal stroke, and the two falling strokes that cross).
 
 ## Regenerating
 
