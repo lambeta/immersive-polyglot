@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reading a stack trace without panic</title>
+    <style>
+    :root { color-scheme: light; }
+    body { margin: 0 auto; max-width: 46rem; padding: 1.5rem; font: 16px/1.55 Georgia, serif; color: #1b1b1b; background: #fff; }
+    nav ul { display: flex; gap: 1rem; list-style: none; padding: 0; }
+    nav a { color: #0b5cad; }
+    main { margin-top: 1.5rem; }
+    h1 { font-size: 1.9rem; line-height: 1.2; }
+    h2 { font-size: 1.3rem; margin-top: 1.8rem; }
+    pre { background: #f4f4f4; padding: .75rem; overflow-x: auto; font: 13px/1.45 ui-monospace, monospace; }
+    code { font: 13px/1.4 ui-monospace, monospace; }
+    blockquote { border-left: 3px solid #ccc; margin: 1rem 0; padding-left: .9rem; color: #444; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: .4rem .6rem; text-align: left; }
+    aside { margin-top: 2rem; border-top: 1px solid #ddd; padding-top: 1rem; color: #555; }
+    [data-hidden-piece] { display: none; }
+    .ticker { font: 13px/1.4 ui-monospace, monospace; background: #fafafa; padding: .5rem; }
+
+    </style>
+  </head>
+  <body>
+    <nav aria-label="Site">
+      <ul>
+        <li><a href="/pages/news-article-a.html">News</a></li>
+        <li><a href="/pages/docs-guide.html">Docs</a></li>
+        <li><a href="/pages/forum-thread.html">Forum</a></li>
+      </ul>
+    </nav>
+    <main>
+      <article>
+        <h1>Reading a stack trace without panic</h1>
+        <p>A stack trace is a list of places the program was, most recent first. The first line you understand is usually the useful one.</p>
+        <pre><code>Error: cannot read property 'id' of undefined
+    at renderRow (table.js:41:18)
+    at renderTable (table.js:22:5)
+    at update (app.js:9:3)</code></pre>
+        <p>Start at the top and walk down until the frames stop being library code.</p>
+        <p>Inline references such as <code>renderRow</code> and <code>table.js:41</code> keep their exact spelling.</p>
+        <pre><code>function renderRow(row) {
+  return row.id; // row was undefined
+}</code></pre>
+        <p>The fix is not always where the error was thrown. It is often one frame up, where the bad value was passed in.</p>
+      </article>
+    </main>
+    <aside aria-label="Related">
+      <p>The sidebar carries navigation and advertising, which should never be translated as content.</p>
+    </aside>
+    <footer>
+      <p>Fixture page. Authored for this repository, not captured from a live site.</p>
+    </footer>
+
+  </body>
+</html>

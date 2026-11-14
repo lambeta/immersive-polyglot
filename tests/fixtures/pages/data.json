@@ -1,0 +1,9 @@
+{
+  "note": "Fixture served as application/json to prove the unsupported-page branch.",
+  "marker": "ZZPRIVACYZZ",
+  "values": [
+    1,
+    2,
+    3
+  ]
+}

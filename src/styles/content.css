@@ -1,0 +1,30 @@
+/*
+ * Extension-declared stylesheet: survives page CSP because Chrome injects it as an extension
+ * resource. Every rule is scoped to this product's own marker attributes, and no rule restyles a
+ * page-authored element without one. No !important: the marker is specific enough.
+ */
+
+[data-ipt="target"] {
+  display: block;
+  margin: 0.2em 0 0.7em;
+  padding: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Translation placed above its source keeps the same reading flow. */
+[data-ipt="target"][data-ipt-position="before"] {
+  margin: 0.7em 0 0.2em;
+}
+
+/* A translation that the page itself renders inside a list item inherits the list marker flow. */
+[data-ipt="target"][data-ipt-inline="true"] {
+  display: inline;
+}
+
+/* Hover affordance for the single-block translation action. */
+[data-ipt="source"][data-ipt-hover="true"] {
+  outline: 1px dashed currentColor;
+  outline-offset: 2px;
+}

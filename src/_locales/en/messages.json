@@ -1,0 +1,518 @@
+{
+  "extName": {
+    "message": "Immersive Polyglot"
+  },
+  "extDescription": {
+    "message": "Read foreign-language pages bilingually with a translation provider you configure yourself."
+  },
+  "actionTitle": {
+    "message": "Immersive Polyglot — translate this page"
+  },
+  "commandToggleTranslation": {
+    "message": "Translate or restore the current page"
+  },
+  "popupTitle": {
+    "message": "Immersive Polyglot"
+  },
+  "popupStatusIdle": {
+    "message": "Not translated"
+  },
+  "popupStatusSegmenting": {
+    "message": "Reading the page…"
+  },
+  "popupStatusTranslating": {
+    "message": "Translating…"
+  },
+  "popupStatusCompleted": {
+    "message": "Translated"
+  },
+  "popupStatusCancelled": {
+    "message": "Cancelled"
+  },
+  "popupStatusFailed": {
+    "message": "Translation failed"
+  },
+  "popupTranslate": {
+    "message": "Translate this page"
+  },
+  "popupRestore": {
+    "message": "Show original"
+  },
+  "popupCancel": {
+    "message": "Cancel"
+  },
+  "popupProvider": {
+    "message": "Provider"
+  },
+  "popupDisplayMode": {
+    "message": "Display"
+  },
+  "popupModeBilingual": {
+    "message": "Translation below original"
+  },
+  "popupModeAbove": {
+    "message": "Translation above original"
+  },
+  "popupModeOnly": {
+    "message": "Translation only"
+  },
+  "popupProviderAuto": {
+    "message": "Automatic"
+  },
+  "popupOpenSettings": {
+    "message": "Settings"
+  },
+  "popupNoProvider": {
+    "message": "No provider configured yet. Open settings to add one."
+  },
+  "popupSkipped": {
+    "message": "{count} passages skipped"
+  },
+  "popupFailedCount": {
+    "message": "{count} passages failed"
+  },
+  "popupReused": {
+    "message": "{count} repeated passages reused"
+  },
+  "popupUsageTitle": {
+    "message": "This session"
+  },
+  "popupUsageSegments": {
+    "message": "{count} segments translated"
+  },
+  "popupUsageCharacters": {
+    "message": "{count} characters sent"
+  },
+  "popupUsageReused": {
+    "message": "{count} segments reused"
+  },
+  "popupCapReached": {
+    "message": "Volume cap reached; {count} passages were not sent."
+  },
+  "popupBrokenRule": {
+    "message": "Rule “{rule}” points at a missing provider; using {provider}."
+  },
+  "popupUnsupported": {
+    "message": "This page cannot be translated: {reason}"
+  },
+  "optionsTitle": {
+    "message": "Immersive Polyglot settings"
+  },
+  "tabProviders": {
+    "message": "Providers"
+  },
+  "tabRouting": {
+    "message": "Routing"
+  },
+  "tabSites": {
+    "message": "Sites"
+  },
+  "tabGlossary": {
+    "message": "Glossary"
+  },
+  "tabStyle": {
+    "message": "Style"
+  },
+  "tabPrivacy": {
+    "message": "Privacy and data"
+  },
+  "tabDiagnostics": {
+    "message": "Diagnostics"
+  },
+  "providerName": {
+    "message": "Display name"
+  },
+  "providerEndpoint": {
+    "message": "Endpoint URL"
+  },
+  "providerCredential": {
+    "message": "Credential"
+  },
+  "providerCredentialKeep": {
+    "message": "Saved — leave blank to keep it"
+  },
+  "providerModel": {
+    "message": "Model identifier"
+  },
+  "providerExtraHeaders": {
+    "message": "Extra headers (one Name: value per line)"
+  },
+  "providerTimeout": {
+    "message": "Request timeout (ms)"
+  },
+  "providerConcurrency": {
+    "message": "Max concurrent requests"
+  },
+  "providerEnabled": {
+    "message": "Enabled"
+  },
+  "providerAdd": {
+    "message": "Add provider"
+  },
+  "providerSave": {
+    "message": "Save provider"
+  },
+  "providerTest": {
+    "message": "Test connection"
+  },
+  "providerDelete": {
+    "message": "Delete"
+  },
+  "providerEdit": {
+    "message": "Edit"
+  },
+  "providerCancelEdit": {
+    "message": "Cancel edit"
+  },
+  "providerListEmpty": {
+    "message": "No providers yet. Add the endpoint, credential and model you already use."
+  },
+  "providerTestOk": {
+    "message": "Connection works."
+  },
+  "providerTestFailed": {
+    "message": "Connection failed: {reason}"
+  },
+  "providerLastVerified": {
+    "message": "Last checked {at}"
+  },
+  "providerNotVerified": {
+    "message": "Never checked"
+  },
+  "providerDeletedConfirm": {
+    "message": "Delete “{name}” and its stored credential?"
+  },
+  "providerDeletedRoutes": {
+    "message": "Rules that referenced it: {rules}"
+  },
+  "providerSecretNotStored": {
+    "message": "Credential required."
+  },
+  "routingTitle": {
+    "message": "Routing"
+  },
+  "routingDefault": {
+    "message": "Default provider"
+  },
+  "routingRules": {
+    "message": "Rules"
+  },
+  "routingKind": {
+    "message": "Rule type"
+  },
+  "routingKindSite": {
+    "message": "Site"
+  },
+  "routingKindPair": {
+    "message": "Language pair"
+  },
+  "routingMatchSite": {
+    "message": "Site host or pattern"
+  },
+  "routingMatchSource": {
+    "message": "Source language"
+  },
+  "routingMatchTarget": {
+    "message": "Target language"
+  },
+  "routingProvider": {
+    "message": "Use provider"
+  },
+  "routingAdd": {
+    "message": "Add rule"
+  },
+  "routingEmpty": {
+    "message": "No rules. Every page uses the default provider."
+  },
+  "routingBroken": {
+    "message": "Broken: missing provider {provider}"
+  },
+  "routingDelete": {
+    "message": "Delete rule"
+  },
+  "routingEnabled": {
+    "message": "Enabled"
+  },
+  "sitesTitle": {
+    "message": "Sites"
+  },
+  "sitesPattern": {
+    "message": "Site host or pattern"
+  },
+  "sitesTargetLang": {
+    "message": "Target language"
+  },
+  "sitesSourceLang": {
+    "message": "Source language"
+  },
+  "sitesMode": {
+    "message": "Display mode"
+  },
+  "sitesProvider": {
+    "message": "Provider override"
+  },
+  "sitesAuto": {
+    "message": "Translate automatically on this site"
+  },
+  "sitesAdd": {
+    "message": "Save site preference"
+  },
+  "sitesEmpty": {
+    "message": "No per-site preferences."
+  },
+  "sitesDelete": {
+    "message": "Delete"
+  },
+  "sitesInherit": {
+    "message": "Use global setting"
+  },
+  "glossaryTitle": {
+    "message": "Glossary"
+  },
+  "glossarySource": {
+    "message": "Source term"
+  },
+  "glossaryTarget": {
+    "message": "Required translation"
+  },
+  "glossaryCaseSensitive": {
+    "message": "Case sensitive"
+  },
+  "glossaryAdd": {
+    "message": "Add glossary entry"
+  },
+  "glossaryEmpty": {
+    "message": "No glossary entries."
+  },
+  "glossaryDelete": {
+    "message": "Delete"
+  },
+  "glossaryConflict": {
+    "message": "“{term}” already has a required translation for this language pair."
+  },
+  "styleTitle": {
+    "message": "Translation style"
+  },
+  "styleInstructionLabel": {
+    "message": "Instruction applied to every translation request"
+  },
+  "styleTemperature": {
+    "message": "Temperature"
+  },
+  "styleSave": {
+    "message": "Save style"
+  },
+  "styleSaved": {
+    "message": "Style saved."
+  },
+  "privacyTitle": {
+    "message": "Privacy and data"
+  },
+  "privacyDisclosureHeading": {
+    "message": "Before you enter a credential"
+  },
+  "privacyDisclosureBody": {
+    "message": "Page text is sent only to the translation endpoint you configure below. Your credential is stored on this device in extension storage, readable only by this extension's background worker, and never shown again in full. Nothing is sent to the extension's authors; there is no account, no analytics and no vendor server. Extension storage is not encrypted on disk — anyone who can copy your browser profile can read the stored credential. You can remove everything with one action below."
+  },
+  "privacyAcknowledge": {
+    "message": "I understand what leaves this device"
+  },
+  "privacyAckRequired": {
+    "message": "Acknowledge the disclosure before entering a credential."
+  },
+  "privacyDeleteAll": {
+    "message": "Delete all stored data"
+  },
+  "privacyDeleteAllConfirm": {
+    "message": "Delete every provider, credential, rule, site preference, glossary entry and setting?"
+  },
+  "privacyDeleteAllDone": {
+    "message": "All stored data deleted and verified empty."
+  },
+  "privacyDeleteAllFailed": {
+    "message": "Deletion could not be verified; {keys} still present."
+  },
+  "privacyClearLog": {
+    "message": "Clear the extension log"
+  },
+  "privacyClearLogDone": {
+    "message": "Log cleared."
+  },
+  "privacyRetention": {
+    "message": "Page content is never stored; only the settings on this page persist."
+  },
+  "diagnosticsTitle": {
+    "message": "Stored data (credential masked)"
+  },
+  "diagnosticsEmpty": {
+    "message": "Nothing stored."
+  },
+  "diagnosticsRefresh": {
+    "message": "Refresh"
+  },
+  "errorUnreachable": {
+    "message": "Cannot reach the provider. Check the endpoint and your network."
+  },
+  "errorTimeout": {
+    "message": "The provider did not respond in time."
+  },
+  "errorAuthRejected": {
+    "message": "The provider rejected the credential. Update it in settings."
+  },
+  "errorRateLimited": {
+    "message": "The provider is rate limiting requests. Retrying with backoff."
+  },
+  "errorQuotaExhausted": {
+    "message": "The provider reports an exhausted quota."
+  },
+  "errorModelUnavailable": {
+    "message": "The model is not available. Check the model identifier."
+  },
+  "errorMalformedResponse": {
+    "message": "The provider returned an unexpected response."
+  },
+  "errorEmptyTranslation": {
+    "message": "The provider returned empty translations."
+  },
+  "errorServerError": {
+    "message": "The provider returned a server error. Retrying."
+  },
+  "errorCancelled": {
+    "message": "Translation cancelled. Passages already translated stay on the page."
+  },
+  "errorWorkerUnavailable": {
+    "message": "The extension's background worker is unavailable. Reload the page."
+  },
+  "errorCapReached": {
+    "message": "The configured volume cap has been reached."
+  },
+  "errorProviderMissing": {
+    "message": "No provider is configured for this page."
+  },
+  "errorStorageQuota": {
+    "message": "Extension storage is full; some settings were not saved."
+  },
+  "errorNewerSchema": {
+    "message": "These settings were written by a newer version of the extension. Update it before changing settings."
+  },
+  "errorMigrationFailed": {
+    "message": "Migrating stored settings failed at step {step}."
+  },
+  "errorUnsupportedPage": {
+    "message": "This page cannot be translated."
+  },
+  "errorRestrictedPage": {
+    "message": "Browser and store pages cannot be translated."
+  },
+  "errorStrictCsp": {
+    "message": "This page blocks the extension from changing it."
+  },
+  "errorSameLanguage": {
+    "message": "This page already appears to be in the target language."
+  },
+  "errorSelectionOnly": {
+    "message": "Select some text first."
+  },
+  "reasonEditable": {
+    "message": "editable field"
+  },
+  "reasonCode": {
+    "message": "code block"
+  },
+  "reasonHidden": {
+    "message": "hidden text"
+  },
+  "reasonNav": {
+    "message": "navigation"
+  },
+  "reasonSameLanguage": {
+    "message": "already in the target language"
+  },
+  "reasonSiteOptOut": {
+    "message": "site opted out"
+  },
+  "reasonCapReached": {
+    "message": "volume cap reached"
+  },
+  "commonSave": {
+    "message": "Save"
+  },
+  "commonCancel": {
+    "message": "Cancel"
+  },
+  "commonDelete": {
+    "message": "Delete"
+  },
+  "commonClose": {
+    "message": "Close"
+  },
+  "commonRequired": {
+    "message": "This field is required."
+  },
+  "commonInvalidEndpoint": {
+    "message": "Enter an absolute https URL (http is allowed for loopback)."
+  },
+  "commonInvalidName": {
+    "message": "Name must be 1–64 characters and unique."
+  },
+  "commonInvalidModel": {
+    "message": "Enter the model identifier."
+  },
+  "commonInvalidTimeout": {
+    "message": "Timeout must be between 5000 and 300000 ms."
+  },
+  "commonInvalidConcurrency": {
+    "message": "Concurrency must be between 1 and 10."
+  },
+  "commonInvalidSite": {
+    "message": "Enter a host name or pattern such as news.example or *.example."
+  },
+  "commonInvalidProviderRef": {
+    "message": "Choose an existing, enabled provider."
+  },
+  "commonInvalidLang": {
+    "message": "Enter a language code such as en, zh, ja or auto."
+  },
+  "commonSaved": {
+    "message": "Saved."
+  },
+  "limitsTitle": {
+    "message": "Volume caps"
+  },
+  "limitsSession": {
+    "message": "Session cap (segments, 0 = no cap)"
+  },
+  "limitsSite": {
+    "message": "Site cap (segments, 0 = no cap)"
+  },
+  "limitsCharacters": {
+    "message": "Character cap per session (0 = no cap)"
+  },
+  "limitsSave": {
+    "message": "Save caps"
+  },
+  "limitsExplained": {
+    "message": "When a cap is reached the extension stops sending text and tells you which passages were skipped. It never shows a money figure, because it has no pricing information."
+  },
+  "langAuto": {
+    "message": "Detect automatically"
+  },
+  "displayModeLabel": {
+    "message": "Display mode"
+  },
+  "errorInvalidRequest": {
+    "message": "The provider rejected the request. Check the endpoint, extra headers and model id."
+  },
+  "providerEntriesDisabled": {
+    "message": "Disabled"
+  },
+  "errorSelectionEmpty": {
+    "message": "Select some text before translating the selection."
+  },
+  "errorInvalidConfiguration": {
+    "message": "The provider configuration is incomplete or invalid. Check it in settings."
+  },
+  "providerTestNeedsSave": {
+    "message": "Save the provider before testing it."
+  }
+}

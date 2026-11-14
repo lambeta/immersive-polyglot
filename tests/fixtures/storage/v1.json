@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "providers": [
+    {
+      "id": "p_legacy",
+      "name": "Legacy provider",
+      "endpoint": "https://legacy.example.test/v1/chat/completions",
+      "model": "legacy-model",
+      "enabled": true,
+      "timeoutMs": 60000,
+      "maxConcurrency": 3
+    }
+  ],
+  "credentials": {
+    "p_legacy": {
+      "providerId": "p_legacy",
+      "secret": "sk-legacy-1234",
+      "masked": "••••1234",
+      "updatedAt": "2026-01-01T00:00:00Z"
+    }
+  },
+  "routing": {
+    "defaultProviderId": "p_legacy",
+    "rules": []
+  },
+  "sites": [],
+  "glossary": [
+    {
+      "sourceTerm": "tide",
+      "targetTerm": "潮汐",
+      "sourceLang": "en",
+      "targetLang": "zh",
+      "caseSensitive": false
+    }
+  ],
+  "style": {
+    "instruction": "",
+    "temperature": 0
+  },
+  "limits": {
+    "maxConcurrency": 3,
+    "sessionCapSegments": 0,
+    "siteCaps": {}
+  },
+  "ui": {
+    "targetLang": "zh",
+    "sourceLang": "auto",
+    "displayMode": "bilingual"
+  }
+}

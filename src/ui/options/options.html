@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title data-i18n="optionsTitle"></title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <header>
+      <h1 data-i18n="optionsTitle"></h1>
+    </header>
+
+    <nav aria-label="Settings sections" class="tabs">
+      <button type="button" aria-controls="panel-providers" aria-expanded="true" data-i18n="tabProviders"></button>
+      <button type="button" aria-controls="panel-routing" aria-expanded="false" data-i18n="tabRouting"></button>
+      <button type="button" aria-controls="panel-sites" aria-expanded="false" data-i18n="tabSites"></button>
+      <button type="button" aria-controls="panel-glossary" aria-expanded="false" data-i18n="tabGlossary"></button>
+      <button type="button" aria-controls="panel-style" aria-expanded="false" data-i18n="tabStyle"></button>
+      <button type="button" aria-controls="panel-privacy" aria-expanded="false" data-i18n="tabPrivacy"></button>
+      <button type="button" aria-controls="panel-diagnostics" aria-expanded="false" data-i18n="tabDiagnostics"></button>
+    </nav>
+
+    <main>
+      <!-- Providers -->
+      <section id="panel-providers" aria-labelledby="providers-heading" class="panel">
+        <h2 id="providers-heading" data-i18n="tabProviders"></h2>
+
+        <div class="disclosure">
+          <h3 data-i18n="privacyDisclosureHeading"></h3>
+          <p data-i18n="privacyDisclosureBody"></p>
+          <label class="inline">
+            <input type="checkbox" id="acknowledge" />
+            <span data-i18n="privacyAcknowledge"></span>
+          </label>
+        </div>
+
+        <form id="provider-form" novalidate>
+          <input type="hidden" id="provider-id" />
+          <div data-field>
+            <label for="provider-name" data-i18n="providerName"></label>
+            <input id="provider-name" name="name" autocomplete="off" required />
+            <p class="error" data-field-error id="error-name"></p>
+          </div>
+          <div data-field>
+            <label for="provider-endpoint" data-i18n="providerEndpoint"></label>
+            <input id="provider-endpoint" name="endpoint" type="url" autocomplete="off" required />
+            <p class="error" data-field-error id="error-endpoint"></p>
+          </div>
+          <div data-field>
+            <label for="provider-credential" data-i18n="providerCredential"></label>
+            <input id="provider-credential" name="credential" autocomplete="new-password" />
+            <p class="hint" data-i18n="privacyRetention"></p>
+            <p class="error" data-field-error id="error-credential"></p>
+          </div>
+          <div data-field>
+            <label for="provider-model" data-i18n="providerModel"></label>
+            <input id="provider-model" name="model" autocomplete="off" required />
+            <p class="error" data-field-error id="error-model"></p>
+          </div>
+          <div data-field>
+            <label for="provider-headers" data-i18n="providerExtraHeaders"></label>
+            <textarea id="provider-headers" name="headers" rows="2" spellcheck="false"></textarea>
+            <p class="error" data-field-error id="error-extraHeaders"></p>
+          </div>
+          <div class="row">
+            <div data-field>
+              <label for="provider-timeout" data-i18n="providerTimeout"></label>
+              <input id="provider-timeout" name="timeoutMs" type="number" min="5000" max="300000" step="1000" value="60000" />
+              <p class="error" data-field-error id="error-timeoutMs"></p>
+            </div>
+            <div data-field>
+              <label for="provider-concurrency" data-i18n="providerConcurrency"></label>
+              <input id="provider-concurrency" name="maxConcurrency" type="number" min="1" max="10" step="1" value="3" />
+              <p class="error" data-field-error id="error-maxConcurrency"></p>
+            </div>
+          </div>
+          <label class="inline">
+            <input type="checkbox" id="provider-enabled" checked />
+            <span data-i18n="providerEnabled"></span>
+          </label>
+          <div class="row">
+            <button type="submit" id="provider-save" data-i18n="providerSave"></button>
+            <button type="button" id="provider-test" data-i18n="providerTest"></button>
+            <button type="button" id="provider-cancel" hidden data-i18n="providerCancelEdit"></button>
+          </div>
+          <p id="provider-feedback" class="feedback" role="status" aria-live="polite"></p>
+        </form>
+
+        <ul id="provider-list" class="list"></ul>
+      </section>
+
+      <!-- Routing -->
+      <section id="panel-routing" aria-labelledby="routing-heading" class="panel" hidden>
+        <h2 id="routing-heading" data-i18n="routingTitle"></h2>
+
+        <div data-field>
+          <label for="routing-default" data-i18n="routingDefault"></label>
+          <select id="routing-default"></select>
+        </div>
+
+        <form id="rule-form" novalidate>
+          <div class="row">
+            <div data-field>
+              <label for="rule-kind" data-i18n="routingKind"></label>
+              <select id="rule-kind">
+                <option value="site" data-i18n="routingKindSite"></option>
+                <option value="languagePair" data-i18n="routingKindPair"></option>
+              </select>
+            </div>
+            <div data-field>
+              <label for="rule-provider" data-i18n="routingProvider"></label>
+              <select id="rule-provider"></select>
+            </div>
+          </div>
+          <div data-field id="rule-site-field">
+            <label for="rule-site" data-i18n="routingMatchSite"></label>
+            <input id="rule-site" autocomplete="off" />
+          </div>
+          <div class="row" id="rule-pair-fields" hidden>
+            <div data-field>
+              <label for="rule-source" data-i18n="routingMatchSource"></label>
+              <input id="rule-source" autocomplete="off" />
+            </div>
+            <div data-field>
+              <label for="rule-target" data-i18n="routingMatchTarget"></label>
+              <input id="rule-target" autocomplete="off" />
+            </div>
+          </div>
+          <button type="submit" id="rule-add" data-i18n="routingAdd"></button>
+          <p id="rule-feedback" class="feedback" role="status" aria-live="polite"></p>
+        </form>
+
+        <ul id="rule-list" class="list"></ul>
+      </section>
+
+      <!-- Sites -->
+      <section id="panel-sites" aria-labelledby="sites-heading" class="panel" hidden>
+        <h2 id="sites-heading" data-i18n="sitesTitle"></h2>
+        <form id="site-form" novalidate>
+          <div class="row">
+            <div data-field>
+              <label for="site-pattern" data-i18n="sitesPattern"></label>
+              <input id="site-pattern" autocomplete="off" />
+            </div>
+            <div data-field>
+              <label for="site-provider" data-i18n="sitesProvider"></label>
+              <select id="site-provider"></select>
+            </div>
+          </div>
+          <div class="row">
+            <div data-field>
+              <label for="site-source" data-i18n="sitesSourceLang"></label>
+              <input id="site-source" autocomplete="off" placeholder="auto" />
+            </div>
+            <div data-field>
+              <label for="site-target" data-i18n="sitesTargetLang"></label>
+              <input id="site-target" autocomplete="off" placeholder="zh" />
+            </div>
+            <div data-field>
+              <label for="site-mode" data-i18n="sitesMode"></label>
+              <select id="site-mode">
+                <option value="bilingual" data-i18n="popupModeBilingual"></option>
+                <option value="above" data-i18n="popupModeAbove"></option>
+                <option value="only" data-i18n="popupModeOnly"></option>
+              </select>
+            </div>
+          </div>
+          <label class="inline">
+            <input type="checkbox" id="site-auto" />
+            <span data-i18n="sitesAuto"></span>
+          </label>
+          <button type="submit" id="site-add" data-i18n="sitesAdd"></button>
+          <p id="site-feedback" class="feedback" role="status" aria-live="polite"></p>
+        </form>
+        <ul id="site-list" class="list"></ul>
+
+        <h3 data-i18n="displayModeLabel"></h3>
+        <div class="row">
+          <div data-field>
+            <label for="ui-source" data-i18n="sitesSourceLang"></label>
+            <input id="ui-source" autocomplete="off" placeholder="auto" />
+          </div>
+          <div data-field>
+            <label for="ui-target" data-i18n="sitesTargetLang"></label>
+            <input id="ui-target" autocomplete="off" placeholder="zh" />
+          </div>
+          <div data-field>
+            <label for="ui-mode" data-i18n="sitesMode"></label>
+            <select id="ui-mode">
+              <option value="bilingual" data-i18n="popupModeBilingual"></option>
+              <option value="above" data-i18n="popupModeAbove"></option>
+              <option value="only" data-i18n="popupModeOnly"></option>
+            </select>
+          </div>
+        </div>
+        <button type="button" id="ui-save" data-i18n="commonSave"></button>
+        <p id="ui-feedback" class="feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- Glossary -->
+      <section id="panel-glossary" aria-labelledby="glossary-heading" class="panel" hidden>
+        <h2 id="glossary-heading" data-i18n="glossaryTitle"></h2>
+        <form id="glossary-form" novalidate>
+          <div class="row">
+            <div data-field>
+              <label for="glossary-source-term" data-i18n="glossarySource"></label>
+              <input id="glossary-source-term" autocomplete="off" />
+            </div>
+            <div data-field>
+              <label for="glossary-target-term" data-i18n="glossaryTarget"></label>
+              <input id="glossary-target-term" autocomplete="off" />
+            </div>
+          </div>
+          <div class="row">
+            <div data-field>
+              <label for="glossary-source-lang" data-i18n="sitesSourceLang"></label>
+              <input id="glossary-source-lang" autocomplete="off" placeholder="en" />
+            </div>
+            <div data-field>
+              <label for="glossary-target-lang" data-i18n="sitesTargetLang"></label>
+              <input id="glossary-target-lang" autocomplete="off" placeholder="zh" />
+            </div>
+          </div>
+          <label class="inline">
+            <input type="checkbox" id="glossary-case" />
+            <span data-i18n="glossaryCaseSensitive"></span>
+          </label>
+          <button type="submit" id="glossary-add" data-i18n="glossaryAdd"></button>
+          <p id="glossary-feedback" class="feedback" role="status" aria-live="polite"></p>
+        </form>
+        <ul id="glossary-list" class="list"></ul>
+      </section>
+
+      <!-- Style -->
+      <section id="panel-style" aria-labelledby="style-heading" class="panel" hidden>
+        <h2 id="style-heading" data-i18n="styleTitle"></h2>
+        <div data-field>
+          <label for="style-instruction" data-i18n="styleInstructionLabel"></label>
+          <textarea id="style-instruction" rows="4"></textarea>
+        </div>
+        <div data-field>
+          <label for="style-temperature" data-i18n="styleTemperature"></label>
+          <input id="style-temperature" type="number" min="0" max="1" step="0.1" value="0" />
+        </div>
+        <button type="button" id="style-save" data-i18n="styleSave"></button>
+        <p id="style-feedback" class="feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- Privacy and data -->
+      <section id="panel-privacy" aria-labelledby="privacy-heading" class="panel" hidden>
+        <h2 id="privacy-heading" data-i18n="privacyTitle"></h2>
+        <p data-i18n="privacyDisclosureBody"></p>
+        <p data-i18n="privacyRetention"></p>
+
+        <div class="row">
+          <button type="button" id="delete-all" class="danger" data-i18n="privacyDeleteAll"></button>
+          <button type="button" id="clear-log" data-i18n="privacyClearLog"></button>
+        </div>
+        <p id="privacy-feedback" class="feedback" role="status" aria-live="polite"></p>
+
+        <h3 data-i18n="limitsTitle"></h3>
+        <p data-i18n="limitsExplained"></p>
+        <div class="row">
+          <div data-field>
+            <label for="session-cap" data-i18n="limitsSession"></label>
+            <input id="session-cap" type="number" min="0" step="1" value="0" />
+          </div>
+          <div data-field>
+            <label for="char-cap" data-i18n="limitsCharacters"></label>
+            <input id="char-cap" type="number" min="0" step="100" value="0" />
+          </div>
+        </div>
+        <button type="button" id="limits-save" data-i18n="limitsSave"></button>
+        <p id="limits-feedback" class="feedback" role="status" aria-live="polite"></p>
+
+        <h3 data-i18n="sitesTitle"></h3>
+        <div class="row">
+          <div data-field>
+            <label for="site-cap-pattern" data-i18n="sitesPattern"></label>
+            <input id="site-cap-pattern" autocomplete="off" />
+          </div>
+          <div data-field>
+            <label for="site-cap-value" data-i18n="limitsSite"></label>
+            <input id="site-cap-value" type="number" min="0" step="1" value="0" />
+          </div>
+          <button type="button" id="site-cap-save" data-i18n="commonSave"></button>
+        </div>
+        <ul id="site-cap-list" class="list"></ul>
+      </section>
+
+      <!-- Diagnostics -->
+      <section id="panel-diagnostics" aria-labelledby="diagnostics-heading" class="panel" hidden>
+        <h2 id="diagnostics-heading" data-i18n="diagnosticsTitle"></h2>
+        <button type="button" id="diagnostics-refresh" data-i18n="diagnosticsRefresh"></button>
+        <dl id="diagnostics-list" class="diagnostics"></dl>
+      </section>
+    </main>
+
+    <script type="module" src="./options.ts"></script>
+  </body>
+</html>

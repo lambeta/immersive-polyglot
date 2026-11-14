@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title data-i18n="extName"></title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main aria-labelledby="title">
+      <h1 id="title" data-i18n="popupTitle"></h1>
+
+      <p id="status" role="status" aria-live="polite" data-i18n="popupStatusIdle"></p>
+      <p id="failure" role="alert" hidden></p>
+      <p id="broken-rule" role="status" hidden></p>
+
+      <div class="actions">
+        <button id="translate" type="button" data-i18n="popupTranslate"></button>
+        <button id="cancel" type="button" hidden data-i18n="popupCancel"></button>
+      </div>
+
+      <div class="field">
+        <label for="provider" data-i18n="popupProvider"></label>
+        <select id="provider"></select>
+      </div>
+
+      <div class="field">
+        <label for="mode" data-i18n="popupDisplayMode"></label>
+        <select id="mode">
+          <option value="bilingual" data-i18n="popupModeBilingual"></option>
+          <option value="above" data-i18n="popupModeAbove"></option>
+          <option value="only" data-i18n="popupModeOnly"></option>
+        </select>
+      </div>
+
+      <section class="usage" aria-labelledby="usage-title">
+        <h2 id="usage-title" data-i18n="popupUsageTitle"></h2>
+        <ul id="usage"></ul>
+      </section>
+
+      <p id="cap" role="status" hidden></p>
+
+      <button id="settings" type="button" class="link" data-i18n="popupOpenSettings"></button>
+    </main>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>

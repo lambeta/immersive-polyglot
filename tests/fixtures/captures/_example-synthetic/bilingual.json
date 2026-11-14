@@ -1,0 +1,30 @@
+{
+  "mode": "bilingual",
+  "page": "news-article-a.html",
+  "capturedWith": "SYNTHETIC EXAMPLE - written by hand for this repository, not a capture of Immersive Translate",
+  "capturedAt": "2026-11-14",
+  "segments": [
+    {
+      "sourceSelector": "h1:nth-of-type(1)",
+      "sourceText": "Harbour authority approves the northern breakwater",
+      "translatedText": "【译】Harbour authority approves the northern breakwater",
+      "relation": "siblingAfter",
+      "containerTag": "div",
+      "inheritsTypography": true,
+      "langAttribute": "zh"
+    },
+    {
+      "sourceSelector": "p:nth-of-type(2)",
+      "sourceText": "The harbour authority voted on Tuesday to approve a breakwater",
+      "translatedText": "【译】The harbour authority voted on Tuesday",
+      "relation": "siblingAfter",
+      "containerTag": "div",
+      "inheritsTypography": true,
+      "langAttribute": "zh"
+    }
+  ],
+  "restoreBaseline": {
+    "domHash": "231e2eb4",
+    "scrollY": 0
+  }
+}

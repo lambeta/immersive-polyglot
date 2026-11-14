@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Getting started with the request pipeline</title>
+    <style>
+    :root { color-scheme: light; }
+    body { margin: 0 auto; max-width: 46rem; padding: 1.5rem; font: 16px/1.55 Georgia, serif; color: #1b1b1b; background: #fff; }
+    nav ul { display: flex; gap: 1rem; list-style: none; padding: 0; }
+    nav a { color: #0b5cad; }
+    main { margin-top: 1.5rem; }
+    h1 { font-size: 1.9rem; line-height: 1.2; }
+    h2 { font-size: 1.3rem; margin-top: 1.8rem; }
+    pre { background: #f4f4f4; padding: .75rem; overflow-x: auto; font: 13px/1.45 ui-monospace, monospace; }
+    code { font: 13px/1.4 ui-monospace, monospace; }
+    blockquote { border-left: 3px solid #ccc; margin: 1rem 0; padding-left: .9rem; color: #444; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: .4rem .6rem; text-align: left; }
+    aside { margin-top: 2rem; border-top: 1px solid #ddd; padding-top: 1rem; color: #555; }
+    [data-hidden-piece] { display: none; }
+    .ticker { font: 13px/1.4 ui-monospace, monospace; background: #fafafa; padding: .5rem; }
+
+    </style>
+  </head>
+  <body>
+    <nav aria-label="Site">
+      <ul>
+        <li><a href="/pages/news-article-a.html">News</a></li>
+        <li><a href="/pages/docs-guide.html">Docs</a></li>
+        <li><a href="/pages/forum-thread.html">Forum</a></li>
+      </ul>
+    </nav>
+    <main>
+      <article>
+        <h1>Getting started with the request pipeline</h1>
+        <p>Every request passes through the same three stages. Understanding the stages makes the configuration options easier to reason about.</p>
+        <h2>1. Read the configuration</h2>
+        <p>The pipeline starts by reading the stored configuration. If a required field is missing, the request stops before any network call is made.</p>
+        <h2>2. Send the request</h2>
+        <p>Requests are sent with a timeout. The timeout is measured from the moment the connection opens, not from the moment the request is queued.</p>
+        <pre><code>const response = await fetch(endpoint, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify(payload),
+});</code></pre>
+        <p>Use the <code>timeoutMs</code> option to change the limit. The default is <code>60000</code> milliseconds.</p>
+        <h2>3. Interpret the result</h2>
+        <p>A successful response carries a single value. A failed response is classified, and the classification decides whether a retry is permitted.</p>
+        <table>
+          <thead><tr><th>Stage</th><th>Failure</th><th>Retried</th></tr></thead>
+          <tbody>
+            <tr><td>Read configuration</td><td>Missing field</td><td>No</td></tr>
+            <tr><td>Send request</td><td>Timeout</td><td>Yes</td></tr>
+            <tr><td>Interpret result</td><td>Unparsable body</td><td>Once</td></tr>
+          </tbody>
+        </table>
+        <p>Continue with the reference page for the full list of options.</p>
+      </article>
+    </main>
+    <aside aria-label="Related">
+      <p>The sidebar carries navigation and advertising, which should never be translated as content.</p>
+    </aside>
+    <footer>
+      <p>Fixture page. Authored for this repository, not captured from a live site.</p>
+    </footer>
+
+  </body>
+</html>

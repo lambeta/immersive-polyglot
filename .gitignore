@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# test artifacts
+test-results/
+playwright-report/
+blob-report/
+coverage/
+
+# local npm cache used because the default cache is not writable in this environment
+.npm-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs and env
+*.log
+.env
+.env.*
+
+# Playwright browsers installed inside the workspace (the default cache is not writable here)
+.playwright-browsers/
