@@ -78,6 +78,28 @@ test("the glossary and the style instruction are applied to every request, not j
   expect(texts.length).toBeGreaterThan(0);
 });
 
+test("the style section writes the instruction and leaves the removed control alone (T036)", async () => {
+  // A profile that still holds a temperature value: the control is gone from the surface, the
+  // stored value is not the surface's business, and the wire keeps sending its own fixed value.
+  await writeSettings(extension, { style: { instruction: "", temperature: 0.7 } });
+  const options = await extension.openOptions();
+  await options.click('button[aria-controls="panel-style"]');
+
+  await expect(options.locator("#style-temperature")).toHaveCount(0);
+  await expect(options.locator("#style-instruction")).toBeVisible();
+  await expect(options.locator("#style-instruction")).toHaveAttribute("placeholder", /register/i);
+
+  await options.fill("#style-instruction", "Formal register; no contractions.");
+  await options.click("#style-save");
+  await expect(options.locator("#style-feedback")).toContainText("Style saved");
+
+  const stored = await options.evaluate(() => chrome.storage.local.get("style"));
+  const style = stored["style"] as { instruction?: string; temperature?: number } | undefined;
+  expect(style?.instruction).toBe("Formal register; no contractions.");
+  expect(style?.temperature).toBe(0.7);
+  await options.close();
+});
+
 test("code blocks and inline code are neither translated nor altered", async () => {
   const url = `${stub.origin}/pages/blog-code.html`;
   const page = await extension.openPage(url);

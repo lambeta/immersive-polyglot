@@ -225,6 +225,39 @@ test("the live sample shows the entered family and size before saving (FR-022)",
   expect((stored["ui"] as Record<string, unknown>)["translationFontScale"] ?? 100).toBe(100);
   expect((stored["ui"] as Record<string, unknown>)["translationFontFamily"] ?? "").toBe("");
 });
+test("the display sample is a small page, and nothing is stored before saving (T035)", async () => {
+  await seedProvider();
+  const options = await openDisplayPanel();
+
+  // The sample reads like the page it will apply to: the reader's own language above the
+  // translation, so the style is judged in context rather than as a swatch.
+  const sampleWrapper = options.locator(".style-picker__sample");
+  await expect(sampleWrapper.locator(".style-picker__source")).toHaveText(
+    "The ferry leaves the northern pier at seven.",
+  );
+  const sample = options.locator(".ipt-style-sample");
+  await expect(sample).toHaveAttribute("data-ipt-style", "none");
+
+  await options.check("#display-style-quote");
+  await expect(sample).toHaveAttribute("data-ipt-style", "quote");
+
+  await options.fill("#translation-font-family", FONT_STACK);
+  await options.fill("#translation-font-scale", "125");
+  await expect
+    .poll(() =>
+      sample.evaluate((element) => ({
+        family: (element as HTMLElement).style.fontFamily,
+        size: (element as HTMLElement).style.fontSize,
+      })),
+    )
+    .toEqual({ family: FONT_STACK, size: "125%" });
+
+  // FR-015: the preview is a preview — nothing is written until the save action is used.
+  const stored = await readExtensionStorage(options);
+  expect((stored["ui"] as Record<string, unknown>)["displayStyle"] ?? "none").toBe("none");
+  expect((stored["ui"] as Record<string, unknown>)["translationFontScale"] ?? 100).toBe(100);
+});
+
 test("a 200% size keeps every block inside its container with no overlap (FR-016, SC-006)", async () => {
   await seedProvider();
   const pageUrl = pageUrlFor("news-article-a.html");

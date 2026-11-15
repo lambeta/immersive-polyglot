@@ -7,345 +7,522 @@
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
-    <header>
-      <h1 data-i18n="optionsTitle"></h1>
-    </header>
-
-    <nav aria-label="Settings sections" class="tabs">
-      <button type="button" aria-controls="panel-providers" aria-expanded="true" data-i18n="tabProviders"></button>
-      <button type="button" aria-controls="panel-routing" aria-expanded="false" data-i18n="tabRouting"></button>
-      <button type="button" aria-controls="panel-sites" aria-expanded="false" data-i18n="tabSites"></button>
-      <button type="button" aria-controls="panel-glossary" aria-expanded="false" data-i18n="tabGlossary"></button>
-      <button type="button" aria-controls="panel-style" aria-expanded="false" data-i18n="tabStyle"></button>
-      <button type="button" aria-controls="panel-display" aria-expanded="false" data-i18n="tabDisplay"></button>
-      <button type="button" aria-controls="panel-privacy" aria-expanded="false" data-i18n="tabPrivacy"></button>
-      <button type="button" aria-controls="panel-diagnostics" aria-expanded="false" data-i18n="tabDiagnostics"></button>
-    </nav>
-
-    <main>
-      <!-- Providers -->
-      <section id="panel-providers" aria-labelledby="providers-heading" class="panel">
-        <h2 id="providers-heading" data-i18n="tabProviders"></h2>
-
-        <div class="disclosure">
-          <h3 data-i18n="privacyDisclosureHeading"></h3>
-          <p data-i18n="privacyDisclosureBody"></p>
-          <label class="inline">
-            <input type="checkbox" id="acknowledge" />
-            <span data-i18n="privacyAcknowledge"></span>
-          </label>
-        </div>
-
-        <form id="provider-form" novalidate>
-          <input type="hidden" id="provider-id" />
-          <div data-field>
-            <label for="provider-name" data-i18n="providerName"></label>
-            <input id="provider-name" name="name" autocomplete="off" required />
-            <p class="error" data-field-error id="error-name"></p>
-          </div>
-          <div data-field>
-            <label for="provider-endpoint" data-i18n="providerEndpoint"></label>
-            <input id="provider-endpoint" name="endpoint" type="url" autocomplete="off" required />
-            <p class="error" data-field-error id="error-endpoint"></p>
-          </div>
-          <div data-field>
-            <label for="provider-credential" data-i18n="providerCredential"></label>
-            <input id="provider-credential" name="credential" autocomplete="new-password" />
-            <p class="hint" data-i18n="privacyRetention"></p>
-            <p class="error" data-field-error id="error-credential"></p>
-          </div>
-          <div data-field>
-            <label for="provider-model" data-i18n="providerModel"></label>
-            <input id="provider-model" name="model" autocomplete="off" required />
-            <p class="error" data-field-error id="error-model"></p>
-          </div>
-          <div data-field>
-            <label for="provider-headers" data-i18n="providerExtraHeaders"></label>
-            <textarea id="provider-headers" name="headers" rows="2" spellcheck="false"></textarea>
-            <p class="error" data-field-error id="error-extraHeaders"></p>
-          </div>
-          <div class="row">
-            <div data-field>
-              <label for="provider-timeout" data-i18n="providerTimeout"></label>
-              <input id="provider-timeout" name="timeoutMs" type="number" min="5000" max="300000" step="1000" value="60000" />
-              <p class="error" data-field-error id="error-timeoutMs"></p>
-            </div>
-            <div data-field>
-              <label for="provider-concurrency" data-i18n="providerConcurrency"></label>
-              <input id="provider-concurrency" name="maxConcurrency" type="number" min="1" max="10" step="1" value="3" />
-              <p class="error" data-field-error id="error-maxConcurrency"></p>
-            </div>
-          </div>
-          <label class="inline">
-            <input type="checkbox" id="provider-enabled" checked />
-            <span data-i18n="providerEnabled"></span>
-          </label>
-          <div class="row">
-            <button type="submit" id="provider-save" data-i18n="providerSave"></button>
-            <button type="button" id="provider-test" data-i18n="providerTest"></button>
-            <button type="button" id="provider-preset" data-i18n="providerPresetDeepseek"></button>
-            <button type="button" id="provider-cancel" hidden data-i18n="providerCancelEdit"></button>
-          </div>
-          <p class="hint" data-i18n="providerPresetHint"></p>
-          <p id="provider-feedback" class="feedback" role="status" aria-live="polite"></p>
-        </form>
-
-        <ul id="provider-list" class="list"></ul>
-      </section>
-
-      <!-- Routing -->
-      <section id="panel-routing" aria-labelledby="routing-heading" class="panel" hidden>
-        <h2 id="routing-heading" data-i18n="routingTitle"></h2>
-
-        <div data-field>
-          <label for="routing-default" data-i18n="routingDefault"></label>
-          <select id="routing-default"></select>
-        </div>
-
-        <form id="rule-form" novalidate>
-          <div class="row">
-            <div data-field>
-              <label for="rule-kind" data-i18n="routingKind"></label>
-              <select id="rule-kind">
-                <option value="site" data-i18n="routingKindSite"></option>
-                <option value="languagePair" data-i18n="routingKindPair"></option>
-              </select>
-            </div>
-            <div data-field>
-              <label for="rule-provider" data-i18n="routingProvider"></label>
-              <select id="rule-provider"></select>
-            </div>
-          </div>
-          <div data-field id="rule-site-field">
-            <label for="rule-site" data-i18n="routingMatchSite"></label>
-            <input id="rule-site" autocomplete="off" />
-          </div>
-          <div class="row" id="rule-pair-fields" hidden>
-            <div data-field>
-              <label for="rule-source" data-i18n="routingMatchSource"></label>
-              <input id="rule-source" autocomplete="off" />
-            </div>
-            <div data-field>
-              <label for="rule-target" data-i18n="routingMatchTarget"></label>
-              <input id="rule-target" autocomplete="off" />
-            </div>
-          </div>
-          <button type="submit" id="rule-add" data-i18n="routingAdd"></button>
-          <p id="rule-feedback" class="feedback" role="status" aria-live="polite"></p>
-        </form>
-
-        <ul id="rule-list" class="list"></ul>
-      </section>
-
-      <!-- Sites -->
-      <section id="panel-sites" aria-labelledby="sites-heading" class="panel" hidden>
-        <h2 id="sites-heading" data-i18n="sitesTitle"></h2>
-        <form id="site-form" novalidate>
-          <div class="row">
-            <div data-field>
-              <label for="site-pattern" data-i18n="sitesPattern"></label>
-              <input id="site-pattern" autocomplete="off" />
-            </div>
-            <div data-field>
-              <label for="site-provider" data-i18n="sitesProvider"></label>
-              <select id="site-provider"></select>
-            </div>
-          </div>
-          <div class="row">
-            <div data-field>
-              <label for="site-source" data-i18n="sitesSourceLang"></label>
-              <input id="site-source" autocomplete="off" placeholder="auto" />
-            </div>
-            <div data-field>
-              <label for="site-target" data-i18n="sitesTargetLang"></label>
-              <input id="site-target" autocomplete="off" placeholder="zh" />
-            </div>
-            <div data-field>
-              <label for="site-mode" data-i18n="sitesMode"></label>
-              <select id="site-mode">
-                <option value="bilingual" data-i18n="popupModeBilingual"></option>
-                <option value="above" data-i18n="popupModeAbove"></option>
-                <option value="only" data-i18n="popupModeOnly"></option>
-              </select>
-            </div>
-            <div data-field>
-              <label for="site-style" data-i18n="displayStyleLabel"></label>
-              <select id="site-style"></select>
-            </div>
-          </div>
-          <label class="inline">
-            <input type="checkbox" id="site-auto" />
-            <span data-i18n="sitesAuto"></span>
-          </label>
-          <button type="submit" id="site-add" data-i18n="sitesAdd"></button>
-          <p id="site-feedback" class="feedback" role="status" aria-live="polite"></p>
-        </form>
-        <ul id="site-list" class="list"></ul>
-
-        <h3 data-i18n="displayModeLabel"></h3>
-        <div class="row">
-          <div data-field>
-            <label for="ui-source" data-i18n="sitesSourceLang"></label>
-            <input id="ui-source" autocomplete="off" placeholder="auto" />
-          </div>
-          <div data-field>
-            <label for="ui-target" data-i18n="sitesTargetLang"></label>
-            <input id="ui-target" autocomplete="off" placeholder="zh" />
-          </div>
-          <div data-field>
-            <label for="ui-mode" data-i18n="sitesMode"></label>
-            <select id="ui-mode">
-              <option value="bilingual" data-i18n="popupModeBilingual"></option>
-              <option value="above" data-i18n="popupModeAbove"></option>
-              <option value="only" data-i18n="popupModeOnly"></option>
-            </select>
-          </div>
-        </div>
-        <button type="button" id="ui-save" data-i18n="commonSave"></button>
-        <p id="ui-feedback" class="feedback" role="status" aria-live="polite"></p>
-      </section>
-
-      <!-- Glossary -->
-      <section id="panel-glossary" aria-labelledby="glossary-heading" class="panel" hidden>
-        <h2 id="glossary-heading" data-i18n="glossaryTitle"></h2>
-        <form id="glossary-form" novalidate>
-          <div class="row">
-            <div data-field>
-              <label for="glossary-source-term" data-i18n="glossarySource"></label>
-              <input id="glossary-source-term" autocomplete="off" />
-            </div>
-            <div data-field>
-              <label for="glossary-target-term" data-i18n="glossaryTarget"></label>
-              <input id="glossary-target-term" autocomplete="off" />
-            </div>
-          </div>
-          <div class="row">
-            <div data-field>
-              <label for="glossary-source-lang" data-i18n="sitesSourceLang"></label>
-              <input id="glossary-source-lang" autocomplete="off" placeholder="en" />
-            </div>
-            <div data-field>
-              <label for="glossary-target-lang" data-i18n="sitesTargetLang"></label>
-              <input id="glossary-target-lang" autocomplete="off" placeholder="zh" />
-            </div>
-          </div>
-          <label class="inline">
-            <input type="checkbox" id="glossary-case" />
-            <span data-i18n="glossaryCaseSensitive"></span>
-          </label>
-          <button type="submit" id="glossary-add" data-i18n="glossaryAdd"></button>
-          <p id="glossary-feedback" class="feedback" role="status" aria-live="polite"></p>
-        </form>
-        <ul id="glossary-list" class="list"></ul>
-      </section>
-
-      <!-- Style -->
-      <section id="panel-style" aria-labelledby="style-heading" class="panel" hidden>
-        <h2 id="style-heading" data-i18n="styleTitle"></h2>
-        <div data-field>
-          <label for="style-instruction" data-i18n="styleInstructionLabel"></label>
-          <textarea id="style-instruction" rows="4"></textarea>
-        </div>
-        <div data-field>
-          <label for="style-temperature" data-i18n="styleTemperature"></label>
-          <input id="style-temperature" type="number" min="0" max="1" step="0.1" value="0" />
-        </div>
-        <button type="button" id="style-save" data-i18n="styleSave"></button>
-        <p id="style-feedback" class="feedback" role="status" aria-live="polite"></p>
-      </section>
-
-      <!-- Display style -->
-      <section id="panel-display" aria-labelledby="display-heading" class="panel" hidden>
-        <h2 id="display-heading" data-i18n="displayTitle"></h2>
-        <p class="hint" data-i18n="displayStyleHint"></p>
-        <div id="display-style-picker"></div>
-
-        <h3 data-i18n="displayTypographyTitle"></h3>
-        <div class="typography-fields">
-          <div data-field>
-            <label for="translation-font-family" data-i18n="displayFontFamily"></label>
-            <input
-              id="translation-font-family"
-              name="fontFamily"
-              autocomplete="off"
-              aria-describedby="translation-font-family-hint error-fontFamily"
-            />
-            <p class="hint" id="translation-font-family-hint" data-i18n="displayFontFamilyHint"></p>
-            <p class="error" data-field-error id="error-fontFamily"></p>
-          </div>
-          <div data-field>
-            <label for="translation-font-scale" data-i18n="displayFontSize"></label>
-            <input
-              id="translation-font-scale"
-              name="fontScale"
-              type="number"
-              min="50"
-              max="200"
-              step="5"
-              value="100"
-              aria-describedby="translation-font-scale-hint error-fontScale"
-            />
-            <p class="hint" id="translation-font-scale-hint" data-i18n="displayFontSizeHint"></p>
-            <p class="error" data-field-error id="error-fontScale"></p>
+    <div class="shell">
+      <aside class="side">
+        <div class="brand">
+          <svg class="brand__mark" viewBox="0 0 16 16" width="30" height="30" aria-hidden="true" focusable="false">
+            <defs>
+              <clipPath id="brand-mark-tile"><rect width="16" height="16" rx="3.5" /></clipPath>
+            </defs>
+            <g clip-path="url(#brand-mark-tile)">
+              <rect width="16" height="16" fill="#13501B" />
+              <path fill="#F9F2E0" d="M6.4 10.53 5.71 8.59H2.99L2.31 10.53H0.9L3.6 3.15H5.11L7.81 10.53ZM4.75 5.63Q4.71 5.51 4.63 5.23Q4.54 4.96 4.47 4.67Q4.39 4.37 4.35 4.21Q4.3 4.43 4.23 4.7Q4.16 4.97 4.1 5.21Q4.03 5.46 3.98 5.63L3.34 7.46H5.38Z" />
+              <path fill="#F9F2E0" d="M13.07 6.98 14.14 7.27Q13.62 8.85 12.78 10Q11.93 11.14 10.73 11.91Q9.52 12.68 7.93 13.15Q7.88 13.02 7.77 12.84Q7.65 12.66 7.53 12.48Q7.4 12.29 7.3 12.17Q8.84 11.79 9.97 11.13Q11.11 10.46 11.87 9.44Q12.64 8.42 13.07 6.98ZM9.72 7.04Q10.17 8.31 10.96 9.33Q11.75 10.35 12.89 11.06Q14.04 11.77 15.55 12.12Q15.44 12.23 15.31 12.41Q15.17 12.59 15.05 12.77Q14.93 12.95 14.85 13.09Q13.26 12.67 12.1 11.88Q10.93 11.09 10.12 9.95Q9.31 8.81 8.76 7.34ZM7.46 6.5H15.39V7.51H7.46ZM10.65 5.28 11.75 4.95Q11.94 5.25 12.1 5.62Q12.27 6 12.35 6.26L11.18 6.64Q11.11 6.37 10.96 5.98Q10.81 5.6 10.65 5.28Z" />
+              <path fill="#F9F2E0" d="M7.95 8.83 L8.85 9.15 L7.95 9.47 ZM8.85 9.73 L7.95 10.05 L8.85 10.37 Z" />
+            </g>
+          </svg>
+          <div class="brand__id">
+            <h1 data-i18n="optionsTitle"></h1>
+            <p class="brand__sub mono" id="version"></p>
           </div>
         </div>
 
-        <div class="row">
-          <button type="button" id="display-style-save" data-i18n="displayStyleSave"></button>
-          <button type="button" id="display-typography-reset" data-i18n="displayTypographyReset"></button>
+        <nav aria-label="Settings sections" class="tabs">
+          <button type="button" aria-controls="panel-providers" aria-expanded="true" data-i18n="tabProviders"></button>
+          <button type="button" aria-controls="panel-routing" aria-expanded="false" data-i18n="tabRouting"></button>
+          <button type="button" aria-controls="panel-sites" aria-expanded="false" data-i18n="tabSites"></button>
+          <button type="button" aria-controls="panel-glossary" aria-expanded="false" data-i18n="tabGlossary"></button>
+          <button type="button" aria-controls="panel-display" aria-expanded="false" data-i18n="tabDisplay"></button>
+          <button type="button" aria-controls="panel-style" aria-expanded="false" data-i18n="tabStyle"></button>
+          <button type="button" aria-controls="panel-privacy" aria-expanded="false" data-i18n="tabPrivacy"></button>
+          <button type="button" aria-controls="panel-diagnostics" aria-expanded="false" data-i18n="tabDiagnostics"></button>
+        </nav>
+
+        <footer class="side__foot">
+          <p class="side__note" data-i18n="sideNote"></p>
+        </footer>
+      </aside>
+
+      <main>
+        <div class="content">
+          <!-- ---------------------------------------------------------- providers -->
+          <section id="panel-providers" aria-labelledby="providers-heading" class="panel">
+            <header class="panel__head">
+              <h2 id="providers-heading" data-i18n="tabProviders"></h2>
+              <p class="lede" data-i18n="providersLede"></p>
+            </header>
+
+            <div class="disclosure">
+              <h3 data-i18n="privacyDisclosureHeading"></h3>
+              <p data-i18n="privacyDisclosureBody"></p>
+              <label class="check">
+                <input type="checkbox" id="acknowledge" />
+                <span data-i18n="privacyAcknowledge"></span>
+              </label>
+            </div>
+
+            <form id="provider-form" class="card" novalidate>
+              <input type="hidden" id="provider-id" />
+              <div class="card__head">
+                <h3 data-i18n="providersFormHeading"></h3>
+                <button type="button" id="provider-preset" class="btn btn--quiet" data-i18n="providerPresetDeepseek"></button>
+              </div>
+              <div class="card__body">
+                <div class="grid-2">
+                  <div data-field>
+                    <label for="provider-name" data-i18n="providerName"></label>
+                    <input id="provider-name" name="name" autocomplete="off" required />
+                    <p class="error" data-field-error id="error-name"></p>
+                  </div>
+                  <div data-field>
+                    <label for="provider-model" data-i18n="providerModel"></label>
+                    <input id="provider-model" name="model" autocomplete="off" required />
+                    <p class="error" data-field-error id="error-model"></p>
+                  </div>
+                </div>
+                <div data-field>
+                  <label for="provider-endpoint" data-i18n="providerEndpoint"></label>
+                  <input id="provider-endpoint" name="endpoint" type="url" autocomplete="off" required />
+                  <p class="error" data-field-error id="error-endpoint"></p>
+                </div>
+                <div data-field>
+                  <label for="provider-credential" data-i18n="providerCredential"></label>
+                  <input id="provider-credential" name="credential" autocomplete="new-password" />
+                  <p class="hint" data-i18n="privacyRetention"></p>
+                  <p class="error" data-field-error id="error-credential"></p>
+                </div>
+                <div data-field>
+                  <label for="provider-headers" data-i18n="providerExtraHeaders"></label>
+                  <textarea id="provider-headers" name="headers" rows="2" spellcheck="false"></textarea>
+                  <p class="error" data-field-error id="error-extraHeaders"></p>
+                </div>
+                <div class="grid-3">
+                  <div data-field>
+                    <label for="provider-timeout" data-i18n="providerTimeout"></label>
+                    <input id="provider-timeout" name="timeoutMs" type="number" min="5000" max="300000" step="1000" value="60000" />
+                    <p class="error" data-field-error id="error-timeoutMs"></p>
+                  </div>
+                  <div data-field>
+                    <label for="provider-concurrency" data-i18n="providerConcurrency"></label>
+                    <input id="provider-concurrency" name="maxConcurrency" type="number" min="1" max="10" step="1" value="3" />
+                    <p class="error" data-field-error id="error-maxConcurrency"></p>
+                  </div>
+                  <label class="check">
+                    <input type="checkbox" id="provider-enabled" checked />
+                    <span data-i18n="providerEnabled"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="submit" id="provider-save" class="btn btn--primary" data-i18n="providerSave"></button>
+                  <button type="button" id="provider-test" class="btn" data-i18n="providerTest"></button>
+                  <button type="button" id="provider-cancel" class="btn btn--quiet" hidden data-i18n="providerCancelEdit"></button>
+                </div>
+                <p class="hint" data-i18n="providerPresetHint"></p>
+                <p id="provider-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="providersSavedHeading"></h3>
+              </div>
+              <ul id="provider-list" class="list"></ul>
+            </div>
+          </section>
+
+          <!-- ------------------------------------------------------------ routing -->
+          <section id="panel-routing" aria-labelledby="routing-heading" class="panel" hidden>
+            <header class="panel__head">
+              <h2 id="routing-heading" data-i18n="routingTitle"></h2>
+              <p class="lede" data-i18n="routingLede"></p>
+            </header>
+
+            <div class="card">
+              <div class="card__body">
+                <div data-field>
+                  <label for="routing-default" data-i18n="routingDefault"></label>
+                  <select id="routing-default"></select>
+                </div>
+              </div>
+            </div>
+
+            <form id="rule-form" class="card" novalidate>
+              <div class="card__head">
+                <h3 data-i18n="routingFormHeading"></h3>
+              </div>
+              <div class="card__body">
+                <div class="grid-2">
+                  <div data-field>
+                    <label for="rule-kind" data-i18n="routingKind"></label>
+                    <select id="rule-kind">
+                      <option value="site" data-i18n="routingKindSite"></option>
+                      <option value="languagePair" data-i18n="routingKindPair"></option>
+                    </select>
+                  </div>
+                  <div data-field>
+                    <label for="rule-provider" data-i18n="routingProvider"></label>
+                    <select id="rule-provider"></select>
+                  </div>
+                </div>
+                <div data-field id="rule-site-field">
+                  <label for="rule-site" data-i18n="routingMatchSite"></label>
+                  <input id="rule-site" autocomplete="off" />
+                </div>
+                <div class="grid-2" id="rule-pair-fields" hidden>
+                  <div data-field>
+                    <label for="rule-source" data-i18n="routingMatchSource"></label>
+                    <input id="rule-source" autocomplete="off" />
+                  </div>
+                  <div data-field>
+                    <label for="rule-target" data-i18n="routingMatchTarget"></label>
+                    <input id="rule-target" autocomplete="off" />
+                  </div>
+                </div>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="submit" id="rule-add" class="btn btn--primary" data-i18n="routingAdd"></button>
+                </div>
+                <p id="rule-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="routingSavedHeading"></h3>
+              </div>
+              <ul id="rule-list" class="list"></ul>
+            </div>
+          </section>
+
+          <!-- -------------------------------------------------------------- sites -->
+          <section id="panel-sites" aria-labelledby="sites-heading" class="panel" hidden>
+            <header class="panel__head">
+              <h2 id="sites-heading" data-i18n="sitesTitle"></h2>
+              <p class="lede" data-i18n="sitesLede"></p>
+            </header>
+
+            <form id="site-form" class="card" novalidate>
+              <div class="card__head">
+                <h3 data-i18n="sitesFormHeading"></h3>
+              </div>
+              <div class="card__body">
+                <div class="grid-2">
+                  <div data-field>
+                    <label for="site-pattern" data-i18n="sitesPattern"></label>
+                    <input id="site-pattern" autocomplete="off" />
+                  </div>
+                  <div data-field>
+                    <label for="site-provider" data-i18n="sitesProvider"></label>
+                    <select id="site-provider"></select>
+                  </div>
+                </div>
+                <div class="grid-4">
+                  <div data-field>
+                    <label for="site-source" data-i18n="sitesSourceLang"></label>
+                    <input id="site-source" autocomplete="off" placeholder="auto" />
+                  </div>
+                  <div data-field>
+                    <label for="site-target" data-i18n="sitesTargetLang"></label>
+                    <input id="site-target" autocomplete="off" placeholder="zh" />
+                  </div>
+                  <div data-field>
+                    <label for="site-mode" data-i18n="sitesMode"></label>
+                    <select id="site-mode">
+                      <option value="bilingual" data-i18n="popupModeBilingual"></option>
+                      <option value="above" data-i18n="popupModeAbove"></option>
+                      <option value="only" data-i18n="popupModeOnly"></option>
+                    </select>
+                  </div>
+                  <div data-field>
+                    <label for="site-style" data-i18n="displayStyleLabel"></label>
+                    <select id="site-style"></select>
+                  </div>
+                </div>
+                <label class="check">
+                  <input type="checkbox" id="site-auto" />
+                  <span data-i18n="sitesAuto"></span>
+                </label>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="submit" id="site-add" class="btn btn--primary" data-i18n="sitesAdd"></button>
+                </div>
+                <p id="site-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="sitesSavedHeading"></h3>
+              </div>
+              <ul id="site-list" class="list"></ul>
+            </div>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="sitesGlobalHeading"></h3>
+              </div>
+              <div class="card__body">
+                <div class="grid-3">
+                  <div data-field>
+                    <label for="ui-source" data-i18n="sitesSourceLang"></label>
+                    <input id="ui-source" autocomplete="off" placeholder="auto" />
+                  </div>
+                  <div data-field>
+                    <label for="ui-target" data-i18n="sitesTargetLang"></label>
+                    <input id="ui-target" autocomplete="off" placeholder="zh" />
+                  </div>
+                  <div data-field>
+                    <label for="ui-mode" data-i18n="displayModeLabel"></label>
+                    <select id="ui-mode">
+                      <option value="bilingual" data-i18n="popupModeBilingual"></option>
+                      <option value="above" data-i18n="popupModeAbove"></option>
+                      <option value="only" data-i18n="popupModeOnly"></option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="button" id="ui-save" class="btn btn--primary" data-i18n="commonSave"></button>
+                </div>
+                <p id="ui-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ----------------------------------------------------------- glossary -->
+          <section id="panel-glossary" aria-labelledby="glossary-heading" class="panel" hidden>
+            <header class="panel__head">
+              <h2 id="glossary-heading" data-i18n="glossaryTitle"></h2>
+              <p class="lede" data-i18n="glossaryLede"></p>
+            </header>
+
+            <form id="glossary-form" class="card" novalidate>
+              <div class="card__head">
+                <h3 data-i18n="glossaryFormHeading"></h3>
+              </div>
+              <div class="card__body">
+                <div class="grid-2">
+                  <div data-field>
+                    <label for="glossary-source-term" data-i18n="glossarySource"></label>
+                    <input id="glossary-source-term" autocomplete="off" />
+                  </div>
+                  <div data-field>
+                    <label for="glossary-target-term" data-i18n="glossaryTarget"></label>
+                    <input id="glossary-target-term" autocomplete="off" />
+                  </div>
+                </div>
+                <div class="grid-2">
+                  <div data-field>
+                    <label for="glossary-source-lang" data-i18n="sitesSourceLang"></label>
+                    <input id="glossary-source-lang" autocomplete="off" placeholder="en" />
+                  </div>
+                  <div data-field>
+                    <label for="glossary-target-lang" data-i18n="sitesTargetLang"></label>
+                    <input id="glossary-target-lang" autocomplete="off" placeholder="zh" />
+                  </div>
+                </div>
+                <label class="check">
+                  <input type="checkbox" id="glossary-case" />
+                  <span data-i18n="glossaryCaseSensitive"></span>
+                </label>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="submit" id="glossary-add" class="btn btn--primary" data-i18n="glossaryAdd"></button>
+                </div>
+                <p id="glossary-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="glossarySavedHeading"></h3>
+              </div>
+              <ul id="glossary-list" class="list"></ul>
+            </div>
+          </section>
+
+          <!-- ------------------------------------------------------------ display -->
+          <section id="panel-display" aria-labelledby="display-heading" class="panel" hidden>
+            <header class="panel__head">
+              <h2 id="display-heading" data-i18n="displayTitle"></h2>
+              <p class="lede" data-i18n="displayLede"></p>
+            </header>
+
+            <div class="card">
+              <div class="card__body">
+                <div id="display-style-picker"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="displayTypographyTitle"></h3>
+              </div>
+              <div class="card__body">
+                <div class="grid-2">
+                  <div data-field>
+                    <label for="translation-font-family" data-i18n="displayFontFamily"></label>
+                    <input
+                      id="translation-font-family"
+                      name="fontFamily"
+                      autocomplete="off"
+                      aria-describedby="translation-font-family-hint error-fontFamily"
+                    />
+                    <p class="hint" id="translation-font-family-hint" data-i18n="displayFontFamilyHint"></p>
+                    <p class="error" data-field-error id="error-fontFamily"></p>
+                  </div>
+                  <div data-field>
+                    <label for="translation-font-scale" data-i18n="displayFontSize"></label>
+                    <input
+                      id="translation-font-scale"
+                      name="fontScale"
+                      type="number"
+                      min="50"
+                      max="200"
+                      step="5"
+                      value="100"
+                      aria-describedby="translation-font-scale-hint error-fontScale"
+                    />
+                    <p class="hint" id="translation-font-scale-hint" data-i18n="displayFontSizeHint"></p>
+                    <p class="error" data-field-error id="error-fontScale"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel__actions">
+              <div class="btn-row">
+                <button type="button" id="display-style-save" class="btn btn--primary" data-i18n="displayStyleSave"></button>
+                <button type="button" id="display-typography-reset" class="btn" data-i18n="displayTypographyReset"></button>
+              </div>
+              <p id="display-style-feedback" class="feedback" role="status" aria-live="polite"></p>
+            </div>
+          </section>
+
+          <!-- -------------------------------------------------------------- style -->
+          <section id="panel-style" aria-labelledby="style-heading" class="panel" hidden>
+            <header class="panel__head">
+              <h2 id="style-heading" data-i18n="styleTitle"></h2>
+              <p class="lede" data-i18n="styleLede"></p>
+            </header>
+
+            <div class="card">
+              <div class="card__body">
+                <div data-field>
+                  <label for="style-instruction" data-i18n="styleInstructionLabel"></label>
+                  <textarea
+                    id="style-instruction"
+                    rows="4"
+                    aria-describedby="style-instruction-hint"
+                    data-i18n-placeholder="styleInstructionPlaceholder"
+                  ></textarea>
+                  <p class="hint" id="style-instruction-hint" data-i18n="styleInstructionHint"></p>
+                </div>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="button" id="style-save" class="btn btn--primary" data-i18n="styleSave"></button>
+                </div>
+                <p id="style-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ------------------------------------------------------------ privacy -->
+          <section id="panel-privacy" aria-labelledby="privacy-heading" class="panel" hidden>
+            <header class="panel__head">
+              <h2 id="privacy-heading" data-i18n="privacyTitle"></h2>
+              <p class="lede" data-i18n="privacyLede"></p>
+            </header>
+
+            <div class="card">
+              <div class="card__body">
+                <p data-i18n="privacyDisclosureBody"></p>
+                <p class="hint" data-i18n="privacyRetention"></p>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="button" id="clear-log" class="btn" data-i18n="privacyClearLog"></button>
+                  <button type="button" id="delete-all" class="btn danger" data-i18n="privacyDeleteAll"></button>
+                </div>
+                <p id="privacy-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="limitsTitle"></h3>
+              </div>
+              <div class="card__body">
+                <p class="hint" data-i18n="limitsExplained"></p>
+                <div class="grid-2">
+                  <div data-field>
+                    <label for="session-cap" data-i18n="limitsSession"></label>
+                    <input id="session-cap" type="number" min="0" step="1" value="0" />
+                  </div>
+                  <div data-field>
+                    <label for="char-cap" data-i18n="limitsCharacters"></label>
+                    <input id="char-cap" type="number" min="0" step="100" value="0" />
+                  </div>
+                </div>
+              </div>
+              <div class="card__foot">
+                <div class="btn-row">
+                  <button type="button" id="limits-save" class="btn btn--primary" data-i18n="limitsSave"></button>
+                </div>
+                <p id="limits-feedback" class="feedback" role="status" aria-live="polite"></p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="limitsSiteHeading"></h3>
+              </div>
+              <div class="card__body">
+                <div class="grid-3">
+                  <div data-field>
+                    <label for="site-cap-pattern" data-i18n="sitesPattern"></label>
+                    <input id="site-cap-pattern" autocomplete="off" />
+                  </div>
+                  <div data-field>
+                    <label for="site-cap-value" data-i18n="limitsSite"></label>
+                    <input id="site-cap-value" type="number" min="0" step="1" value="0" />
+                  </div>
+                  <div class="btn-row">
+                    <button type="button" id="site-cap-save" class="btn" data-i18n="commonSave"></button>
+                  </div>
+                </div>
+                <ul id="site-cap-list" class="list list--plain"></ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- -------------------------------------------------------- diagnostics -->
+          <section id="panel-diagnostics" aria-labelledby="diagnostics-heading" class="panel" hidden>
+            <header class="panel__head">
+              <h2 id="diagnostics-heading" data-i18n="diagnosticsTitle"></h2>
+              <p class="lede" data-i18n="diagnosticsLede"></p>
+            </header>
+
+            <div class="card">
+              <div class="card__head">
+                <h3 data-i18n="diagnosticsStoredHeading"></h3>
+                <button type="button" id="diagnostics-refresh" class="btn btn--quiet" data-i18n="diagnosticsRefresh"></button>
+              </div>
+              <div class="card__body">
+                <dl id="diagnostics-list" class="diagnostics"></dl>
+              </div>
+            </div>
+          </section>
         </div>
-        <p id="display-style-feedback" class="feedback" role="status" aria-live="polite"></p>
-      </section>
-
-      <!-- Privacy and data -->
-      <section id="panel-privacy" aria-labelledby="privacy-heading" class="panel" hidden>
-        <h2 id="privacy-heading" data-i18n="privacyTitle"></h2>
-        <p data-i18n="privacyDisclosureBody"></p>
-        <p data-i18n="privacyRetention"></p>
-
-        <div class="row">
-          <button type="button" id="delete-all" class="danger" data-i18n="privacyDeleteAll"></button>
-          <button type="button" id="clear-log" data-i18n="privacyClearLog"></button>
-        </div>
-        <p id="privacy-feedback" class="feedback" role="status" aria-live="polite"></p>
-
-        <h3 data-i18n="limitsTitle"></h3>
-        <p data-i18n="limitsExplained"></p>
-        <div class="row">
-          <div data-field>
-            <label for="session-cap" data-i18n="limitsSession"></label>
-            <input id="session-cap" type="number" min="0" step="1" value="0" />
-          </div>
-          <div data-field>
-            <label for="char-cap" data-i18n="limitsCharacters"></label>
-            <input id="char-cap" type="number" min="0" step="100" value="0" />
-          </div>
-        </div>
-        <button type="button" id="limits-save" data-i18n="limitsSave"></button>
-        <p id="limits-feedback" class="feedback" role="status" aria-live="polite"></p>
-
-        <h3 data-i18n="sitesTitle"></h3>
-        <div class="row">
-          <div data-field>
-            <label for="site-cap-pattern" data-i18n="sitesPattern"></label>
-            <input id="site-cap-pattern" autocomplete="off" />
-          </div>
-          <div data-field>
-            <label for="site-cap-value" data-i18n="limitsSite"></label>
-            <input id="site-cap-value" type="number" min="0" step="1" value="0" />
-          </div>
-          <button type="button" id="site-cap-save" data-i18n="commonSave"></button>
-        </div>
-        <ul id="site-cap-list" class="list"></ul>
-      </section>
-
-      <!-- Diagnostics -->
-      <section id="panel-diagnostics" aria-labelledby="diagnostics-heading" class="panel" hidden>
-        <h2 id="diagnostics-heading" data-i18n="diagnosticsTitle"></h2>
-        <button type="button" id="diagnostics-refresh" data-i18n="diagnosticsRefresh"></button>
-        <dl id="diagnostics-list" class="diagnostics"></dl>
-      </section>
-    </main>
+      </main>
+    </div>
 
     <script type="module" src="./options.ts"></script>
   </body>

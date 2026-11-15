@@ -83,6 +83,44 @@ test("a site rule sends that site to its provider and other sites to the default
   expect((await paths()).every((path) => path.startsWith("/a/"))).toBe(true);
 });
 
+test("a rule whose provider is gone is shown as broken and stays deletable (T038)", async () => {
+  await writeSettings(extension, {
+    routing: {
+      defaultProviderId: "p_default",
+      rules: [
+        { id: "r_dead", kind: "site", match: "docs.example", providerId: "p_vanished", enabled: true },
+        {
+          id: "r_pair",
+          kind: "languagePair",
+          match: { sourceLang: "en", targetLang: "zh" },
+          providerId: "p_other",
+          enabled: true,
+        },
+      ],
+    },
+  });
+
+  const options = await extension.openOptions();
+  await options.getByRole("button", { name: "Routing" }).click();
+
+  const rows = options.locator("#rule-list li");
+  await expect(rows).toHaveCount(2);
+
+  const dead = rows.first();
+  await expect(dead).toContainText("docs.example");
+  await expect(dead).toContainText("Broken");
+  await expect(dead).toContainText("p_vanished");
+  // A rule is not removed for pointing at nothing: it stays visible, labelled, and deletable.
+  const remove = dead.getByRole("button", { name: "Delete rule" });
+  await expect(remove).toBeVisible();
+  await remove.click();
+  await expect(options.locator("#rule-list li")).toHaveCount(1);
+
+  // The kind is named on the row, so "en to zh" is not mistaken for a site pattern.
+  await expect(options.locator("#rule-list li").first()).toContainText("Language pair");
+  await options.close();
+});
+
 test("a language-pair rule beats the global default, and a site rule beats it", async () => {
   await writeSettings(extension, {
     routing: {

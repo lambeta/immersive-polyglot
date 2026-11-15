@@ -94,21 +94,22 @@ function providerListRow(provider: TranslationProvider): HTMLElement {
     : t("providerNotVerified");
 
   const meta = el("div", { class: "meta" }, [
-    el("strong", { text: provider.name }),
-    el("small", {
-      text: [provider.endpoint, provider.model, status].join(" · "),
-    }),
+    el("div", { class: "meta__title" }, [
+      el("strong", { text: provider.name }),
+      ...(provider.enabled ? [] : [el("span", { class: "pill", text: t("providerEntriesDisabled") })]),
+    ]),
+    el("small", { class: "mono", text: `${provider.endpoint} · ${provider.model}` }),
+    el("small", { text: status }),
     ...(provider.lastVerification
       ? [el("small", { text: t("providerLastVerified", { at: formatDate(provider.lastVerification.at) }) })]
       : []),
-    ...(provider.enabled ? [] : [el("small", { text: t("providerEntriesDisabled") })]),
   ]);
 
-  const actions = el("div", { class: "row" }, [
-    el("button", { type: "button", "data-action": "edit", "data-id": provider.id }, [t("providerEdit")]),
+  const actions = el("div", { class: "row-actions" }, [
+    el("button", { type: "button", class: "btn btn--quiet", "data-action": "edit", "data-id": provider.id }, [t("providerEdit")]),
     el("button", {
       type: "button",
-      class: "danger",
+      class: "btn btn--quiet danger",
       "data-action": "delete",
       "data-id": provider.id,
     }, [t("providerDelete")]),
@@ -347,13 +348,20 @@ function ruleRow(rule: RoutingRule): HTMLElement {
   const broken = !provider || !provider.enabled;
   const label = rule.kind === "site" ? rule.match : `${rule.match.sourceLang} → ${rule.match.targetLang}`;
   const meta = el("div", { class: "meta" }, [
-    el("strong", { text: `${t(rule.kind === "site" ? "routingKindSite" : "routingKindPair")}: ${label}` }),
-    el("small", { text: provider ? provider.name : t("routingBroken", { provider: rule.providerId }) }),
-    ...(broken ? [el("small", { class: "broken", text: t("routingBroken", { provider: rule.providerId }) })] : []),
-    ...(rule.enabled ? [] : [el("small", { text: t("providerEntriesDisabled") })]),
+    el("div", { class: "meta__title" }, [
+      el("strong", { text: label }),
+      el("span", {
+        class: "pill",
+        text: t(rule.kind === "site" ? "routingKindSite" : "routingKindPair"),
+      }),
+      ...(rule.enabled ? [] : [el("span", { class: "pill", text: t("providerEntriesDisabled") })]),
+    ]),
+    ...(broken
+      ? [el("small", { class: "broken", text: t("routingBroken", { provider: rule.providerId }) })]
+      : [el("small", { text: provider?.name ?? rule.providerId })]),
   ]);
-  const actions = el("div", { class: "row" }, [
-    el("button", { type: "button", "data-action": "delete-rule", "data-id": rule.id }, [t("routingDelete")]),
+  const actions = el("div", { class: "row-actions" }, [
+    el("button", { type: "button", class: "btn btn--quiet", "data-action": "delete-rule", "data-id": rule.id }, [t("routingDelete")]),
   ]);
   return el("li", {}, [meta, actions]);
 }
@@ -426,8 +434,8 @@ async function renderSites(): Promise<void> {
           .join(" · "),
       }),
     ]);
-    const actions = el("div", { class: "row" }, [
-      el("button", { type: "button", "data-action": "delete-site", "data-id": site.sitePattern }, [t("sitesDelete")]),
+    const actions = el("div", { class: "row-actions" }, [
+      el("button", { type: "button", class: "btn btn--quiet", "data-action": "delete-site", "data-id": site.sitePattern }, [t("sitesDelete")]),
     ]);
     list.append(el("li", {}, [meta, actions]));
   }
@@ -501,8 +509,8 @@ async function renderGlossary(): Promise<void> {
         text: `${entry.sourceLang} → ${entry.targetLang}${entry.caseSensitive ? " · " + t("glossaryCaseSensitive") : ""}`,
       }),
     ]);
-    const actions = el("div", { class: "row" }, [
-      el("button", { type: "button", "data-action": "delete-glossary", "data-term": entry.sourceTerm, "data-source": entry.sourceLang, "data-target": entry.targetLang }, [t("glossaryDelete")]),
+    const actions = el("div", { class: "row-actions" }, [
+      el("button", { type: "button", class: "btn btn--quiet", "data-action": "delete-glossary", "data-term": entry.sourceTerm, "data-source": entry.sourceLang, "data-target": entry.targetLang }, [t("glossaryDelete")]),
     ]);
     list.append(el("li", {}, [meta, actions]));
   }
@@ -557,6 +565,8 @@ async function deleteAllData(): Promise<void> {
     // version and the profile would no longer be empty (FR-024).
     settings = defaultSettings();
     await renderAll();
+    // A wiped profile has nothing to translate with; land where the reader has to start again.
+    showSection("panel-providers");
     return;
   }
   feedback("privacy-feedback", t("privacyDeleteAllFailed", { keys: remaining.join(", ") }));
@@ -587,8 +597,8 @@ async function renderSiteCaps(): Promise<void> {
       el("strong", { text: pattern }),
       el("small", { text: t("limitsSite") + ": " + cap }),
     ]);
-    const actions = el("div", { class: "row" }, [
-      el("button", { type: "button", "data-action": "delete-sitecap", "data-id": pattern }, [t("commonDelete")]),
+    const actions = el("div", { class: "row-actions" }, [
+      el("button", { type: "button", class: "btn btn--quiet", "data-action": "delete-sitecap", "data-id": pattern }, [t("commonDelete")]),
     ]);
     list.append(el("li", {}, [meta, actions]));
   }
@@ -643,7 +653,6 @@ async function renderAll(): Promise<void> {
   await renderSiteCaps();
   renderDisplayPanel();
   setValue("style-instruction", settings.style.instruction);
-  setValue("style-temperature", settings.style.temperature);
   setValue("session-cap", settings.limits.sessionCapSegments);
   setValue("char-cap", settings.limits.sessionCapChars);
   await renderDiagnostics();
@@ -659,6 +668,7 @@ function renderDisplayPanel(): void {
       legend: t("displayStyleLabel"),
       showSample: true,
       sampleText: t("displayStyleSample"),
+      sampleSource: t("displaySampleSource"),
       showIcons: true,
       iconFor: previewIcon,
     });
@@ -759,18 +769,22 @@ function resetTypography(): void {
   void saveDisplaySettings();
 }
 
+/** The one way a section becomes visible: the rail's state and the panel's hidden flag together. */
+function showSection(panelId: string): void {
+  for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>(".tabs button"))) {
+    const expanded = button.getAttribute("aria-controls") === panelId;
+    button.setAttribute("aria-expanded", String(expanded));
+    const panel = document.getElementById(button.getAttribute("aria-controls") ?? "");
+    if (panel) panel.hidden = !expanded;
+  }
+  if (panelId === "panel-diagnostics") void renderDiagnostics();
+  // The rail is sticky: a section opened from the middle of a long panel starts at its top.
+  document.querySelector("main")?.scrollIntoView({ block: "start" });
+}
+
 function wireTabs(): void {
-  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".tabs button"));
-  for (const button of buttons) {
-    button.addEventListener("click", () => {
-      for (const other of buttons) {
-        const expanded = other === button;
-        other.setAttribute("aria-expanded", String(expanded));
-        const panel = document.getElementById(other.getAttribute("aria-controls") ?? "");
-        if (panel) panel.hidden = !expanded;
-      }
-      if (button.getAttribute("aria-controls") === "panel-diagnostics") void renderDiagnostics();
-    });
+  for (const button of Array.from(document.querySelectorAll<HTMLButtonElement>(".tabs button"))) {
+    button.addEventListener("click", () => showSection(button.getAttribute("aria-controls") ?? ""));
   }
 }
 
@@ -902,7 +916,6 @@ function wireForms(): void {
   qs<HTMLButtonElement>(document, "#style-save").addEventListener("click", async () => {
     await store.save((current) => {
       current.style.instruction = value("style-instruction");
-      current.style.temperature = Math.min(1, Math.max(0, Number(value("style-temperature")) || 0));
       return current;
     });
     settings = await store.load();
@@ -929,8 +942,14 @@ function wireForms(): void {
   });
 }
 
+function renderVersion(): void {
+  const version = chrome.runtime?.getManifest?.().version ?? "";
+  qs<HTMLElement>(document, "#version").textContent = version ? t("sideVersion", { version }) : "";
+}
+
 async function boot(): Promise<void> {
   localize(document);
+  renderVersion();
   settings = await store.load();
   wireTabs();
   wireForms();

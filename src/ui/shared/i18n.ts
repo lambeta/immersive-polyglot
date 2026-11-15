@@ -41,6 +41,9 @@ export function localize(root: ParentNode): void {
   }
   for (const node of root.querySelectorAll<HTMLElement>("[data-i18n-placeholder]")) {
     const key = node.dataset["i18nPlaceholder"];
-    if (key && node instanceof HTMLInputElement) node.placeholder = t(key);
+    if (!key) continue;
+    if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+      node.placeholder = t(key);
+    }
   }
 }

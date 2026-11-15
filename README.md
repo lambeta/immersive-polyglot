@@ -45,6 +45,16 @@ Pinned in [package.json](package.json) and recorded in `.specify/memory/constitu
 | @types/chrome | 0.0.287 | extension API types |
 | Node.js | 20 LTS or newer | tooling only; the shipped extension has **zero runtime dependencies** |
 
+### Type and colour
+
+Both surfaces — the page control and the settings page — are built from one system:
+[src/ui/shared/ui.css](src/ui/shared/ui.css). Host Grotesk sets the words, JetBrains Mono sets
+anything a machine wrote (endpoints, model ids, counts). The two faces are bundled under
+[src/ui/shared/fonts](src/ui/shared/fonts) with their SIL Open Font License texts, so an
+extension page never asks a font host for anything: the product's promise is that page text and
+settings leave the device only through the endpoint the user configured, and a remote font would
+quietly break it.
+
 ## Run and test
 
 ```bash

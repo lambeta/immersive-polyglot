@@ -7,44 +7,106 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <main aria-labelledby="title">
-      <h1 id="title" data-i18n="popupTitle"></h1>
+    <main class="panel" aria-labelledby="title">
+      <header class="panel__head">
+        <svg class="panel__mark" viewBox="0 0 16 16" width="32" height="32" aria-hidden="true" focusable="false">
+          <defs>
+            <clipPath id="panel-mark-tile"><rect width="16" height="16" rx="3.5" /></clipPath>
+          </defs>
+          <g clip-path="url(#panel-mark-tile)">
+            <rect width="16" height="16" fill="#13501B" />
+            <path fill="#F9F2E0" d="M6.4 10.53 5.71 8.59H2.99L2.31 10.53H0.9L3.6 3.15H5.11L7.81 10.53ZM4.75 5.63Q4.71 5.51 4.63 5.23Q4.54 4.96 4.47 4.67Q4.39 4.37 4.35 4.21Q4.3 4.43 4.23 4.7Q4.16 4.97 4.1 5.21Q4.03 5.46 3.98 5.63L3.34 7.46H5.38Z" />
+            <path fill="#F9F2E0" d="M13.07 6.98 14.14 7.27Q13.62 8.85 12.78 10Q11.93 11.14 10.73 11.91Q9.52 12.68 7.93 13.15Q7.88 13.02 7.77 12.84Q7.65 12.66 7.53 12.48Q7.4 12.29 7.3 12.17Q8.84 11.79 9.97 11.13Q11.11 10.46 11.87 9.44Q12.64 8.42 13.07 6.98ZM9.72 7.04Q10.17 8.31 10.96 9.33Q11.75 10.35 12.89 11.06Q14.04 11.77 15.55 12.12Q15.44 12.23 15.31 12.41Q15.17 12.59 15.05 12.77Q14.93 12.95 14.85 13.09Q13.26 12.67 12.1 11.88Q10.93 11.09 10.12 9.95Q9.31 8.81 8.76 7.34ZM7.46 6.5H15.39V7.51H7.46ZM10.65 5.28 11.75 4.95Q11.94 5.25 12.1 5.62Q12.27 6 12.35 6.26L11.18 6.64Q11.11 6.37 10.96 5.98Q10.81 5.6 10.65 5.28Z" />
+            <path fill="#F9F2E0" d="M7.95 8.83 L8.85 9.15 L7.95 9.47 ZM8.85 9.73 L7.95 10.05 L8.85 10.37 Z" />
+          </g>
+        </svg>
+        <div class="panel__id">
+          <h1 id="title" data-i18n="popupTitle"></h1>
+          <p class="panel__site mono" id="site-host"></p>
+        </div>
+        <button
+          id="settings"
+          class="icon-btn"
+          type="button"
+          data-i18n-aria-label="popupOpenSettings"
+          data-i18n-title="popupOpenSettings"
+        >
+          <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true" focusable="false">
+          <g
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.4"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M2 4.6h5.1M10.8 4.6H14" />
+            <circle cx="8.9" cy="4.6" r="1.9" />
+            <path d="M2 11.4h2.1M7.7 11.4H14" />
+            <circle cx="5.2" cy="11.4" r="1.9" />
+          </g>
+          </svg>
+        </button>
+      </header>
 
-      <p id="status" role="status" aria-live="polite" data-i18n="popupStatusIdle"></p>
-      <p id="failure" role="alert" hidden></p>
-      <p id="broken-rule" role="status" hidden></p>
-
-      <div class="actions">
-        <button id="translate" type="button" data-i18n="popupTranslate"></button>
-        <button id="cancel" type="button" hidden data-i18n="popupCancel"></button>
+      <div class="action">
+        <div class="state">
+          <span class="state__dot" id="state-dot" data-state="idle" aria-hidden="true"></span>
+          <p id="status" role="status" aria-live="polite" data-i18n="popupStatusIdle"></p>
+        </div>
+        <div class="btn-row">
+          <button id="translate" class="btn btn--primary btn--wide" type="button" data-i18n="popupTranslate"></button>
+          <button id="cancel" class="btn" type="button" hidden data-i18n="popupCancel"></button>
+        </div>
+        <p id="no-provider" class="note note--warn" role="status" hidden></p>
+        <p id="failure" class="note note--error" role="alert" hidden></p>
+        <p id="cap" class="note note--warn" role="status" hidden></p>
+        <p id="broken-rule" class="note note--warn" role="status" hidden></p>
       </div>
+
+      <fieldset id="mode" class="segmented" aria-labelledby="mode-legend">
+        <legend id="mode-legend" data-i18n="popupDisplayMode"></legend>
+        <div class="segmented__track">
+          <label class="segmented__opt" data-i18n-title="popupModeBilingual">
+            <input
+              type="radio"
+              name="popup-mode"
+              value="bilingual"
+              checked
+              data-i18n-aria-label="popupModeBilingual"
+            />
+            <span data-i18n="popupModeShortBilingual"></span>
+          </label>
+          <label class="segmented__opt" data-i18n-title="popupModeAbove">
+            <input
+              type="radio"
+              name="popup-mode"
+              value="above"
+              data-i18n-aria-label="popupModeAbove"
+            />
+            <span data-i18n="popupModeShortAbove"></span>
+          </label>
+          <label class="segmented__opt" data-i18n-title="popupModeOnly">
+            <input type="radio" name="popup-mode" value="only" data-i18n-aria-label="popupModeOnly" />
+            <span data-i18n="popupModeShortOnly"></span>
+          </label>
+        </div>
+      </fieldset>
 
       <div class="field">
         <label for="provider" data-i18n="popupProvider"></label>
         <select id="provider"></select>
       </div>
 
-      <div class="field">
-        <label for="mode" data-i18n="popupDisplayMode"></label>
-        <select id="mode">
-          <option value="bilingual" data-i18n="popupModeBilingual"></option>
-          <option value="above" data-i18n="popupModeAbove"></option>
-          <option value="only" data-i18n="popupModeOnly"></option>
-        </select>
-      </div>
-
-      <div class="field">
+      <div class="picker">
         <div id="display-style-picker"></div>
+        <p class="picker__current" id="style-current"></p>
       </div>
 
       <section class="usage" aria-labelledby="usage-title">
-        <h2 id="usage-title" data-i18n="popupUsageTitle"></h2>
+        <h2 id="usage-title" class="usage__title" data-i18n="popupUsageTitle"></h2>
         <ul id="usage"></ul>
       </section>
 
-      <p id="cap" role="status" hidden></p>
-
-      <button id="settings" type="button" class="link" data-i18n="popupOpenSettings"></button>
     </main>
     <script type="module" src="./popup.ts"></script>
   </body>

@@ -68,6 +68,91 @@ test("the options page is operable by keyboard with named controls", async () =>
   await expect(options.locator("#privacy-feedback")).toBeAttached();
 });
 
+test("the providers section names every control and puts the disclosure first (T020)", async () => {
+  const options = await extension.openOptions();
+
+  const unnamed = await options.evaluate(() =>
+    Array.from(
+      document.querySelectorAll(
+        "#panel-providers input, #panel-providers select, #panel-providers textarea, #panel-providers button",
+      ),
+    )
+      .filter((element) => {
+        if (element.getAttribute("type") === "hidden") return false;
+        const id = element.getAttribute("id") ?? "";
+        const labelled = id ? document.querySelector(`label[for="${id}"]`) : null;
+        const aria = element.getAttribute("aria-label");
+        const wrapped = element.closest("label");
+        const text = (element.textContent ?? "").trim();
+        return !labelled && !aria && !wrapped && text.length === 0;
+      })
+      .map((element) => element.outerHTML.slice(0, 90)),
+  );
+  expect(unnamed).toEqual([]);
+
+  // FR-012: the gate cannot be discovered after the field it gates.
+  const order = await options.evaluate(() => {
+    const disclosure = document.querySelector("#panel-providers .disclosure");
+    const credential = document.querySelector("#provider-credential");
+    if (!disclosure || !credential) return "missing";
+    const relation = disclosure.compareDocumentPosition(credential);
+    return relation & Node.DOCUMENT_POSITION_FOLLOWING ? "disclosure-first" : "credential-first";
+  });
+  expect(order).toBe("disclosure-first");
+  await options.close();
+});
+
+test("the panel hands over to the settings page from the keyboard alone (T031)", async () => {
+  const fixture = await extension.openPage(`${stub.origin}/pages/news-article-a.html`);
+  await waitForContentScript(fixture);
+  await fixture.bringToFront();
+
+  const popup = await extension.context.newPage();
+  await popup.setViewportSize({ width: 384, height: 720 });
+  await popup.goto(extension.popupUrl);
+  await popup.waitForSelector("#translate");
+
+  // The first Tab reaches the way into settings, and the ring is really drawn.
+  await popup.keyboard.press("Tab");
+  expect(await popup.evaluate(() => document.activeElement?.id ?? "")).toBe("settings");
+  const ring = await popup.evaluate(() => {
+    const style = getComputedStyle(document.activeElement as HTMLElement);
+    return { style: style.outlineStyle, width: Number.parseFloat(style.outlineWidth) };
+  });
+  expect(ring.style).not.toBe("none");
+  expect(ring.width).toBeGreaterThanOrEqual(2);
+
+  const [settings] = await Promise.all([
+    extension.context.waitForEvent("page", { timeout: 20_000 }),
+    popup.keyboard.press("Enter"),
+  ]);
+  await settings.waitForLoadState("domcontentloaded");
+  await expect(settings.locator("#providers-heading")).toBeVisible();
+
+  // The settings page opens with focus in its rail, not on an incidental control.
+  await settings.keyboard.press("Tab");
+  const firstStop = await settings.evaluate(
+    () => document.activeElement?.getAttribute("aria-controls") ?? "",
+  );
+  expect(firstStop).toContain("panel-");
+
+  // A whole save, keyboard only: acknowledge, fill four fields, press the action.
+  await settings.locator("#acknowledge").focus();
+  await settings.keyboard.press("Space");
+  await settings.locator("#provider-name").focus();
+  await settings.keyboard.press("ControlOrMeta+A");
+  await settings.keyboard.type("Keyboard stub");
+  await settings.locator("#provider-endpoint").focus();
+  await settings.keyboard.type(`${stub.origin}/v1/chat/completions`);
+  await settings.locator("#provider-model").focus();
+  await settings.keyboard.type("stub-model");
+  await settings.locator("#provider-credential").focus();
+  await settings.keyboard.type("sk-e2e-keyboard-0001");
+  await settings.locator("#provider-save").focus();
+  await settings.keyboard.press("Enter");
+  await expect(settings.locator("#provider-feedback")).toContainText("Saved");
+});
+
 test("a right-to-left target keeps the bilingual reading order and announces its language", async () => {
   await configureProviders(
     extension,

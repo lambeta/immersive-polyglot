@@ -327,3 +327,87 @@ test("the Divider style draws a short dashed line above each translation (FR-001
   }
   expect(stub.requests.length).toBe(requestsBefore);
 });
+
+test("the panel's display position is one three-way group and sticks to the site (T024)", async () => {
+  await seedProvider();
+  const page = await translate(pageUrlFor("news-article-a.html"));
+  await page.bringToFront();
+
+  const popup = await extension.context.newPage();
+  await popup.setViewportSize({ width: 384, height: 720 });
+  await popup.goto(extension.popupUrl);
+  await popup.waitForSelector("#translate");
+
+  const radios = popup.locator('input[name="popup-mode"]');
+  await expect(radios).toHaveCount(3);
+  // A radio group, not three toggles: exactly one is chosen, and it is the stored mode.
+  await expect(popup.locator('input[name="popup-mode"]:checked')).toHaveCount(1);
+  await expect(popup.locator('input[name="popup-mode"][value="bilingual"]')).toBeChecked();
+  // Each option is announced with the full sentence, not only the short word on the track.
+  await expect(popup.getByRole("radio", { name: "Translation above original" })).toHaveCount(1);
+
+  await popup.check('input[name="popup-mode"][value="above"]');
+  // The page follows the command: the renderer marks the translation as placed before its source.
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-ipt="target"]')
+        .first()
+        .evaluate((element) => element.getAttribute("data-ipt-position") ?? "after"),
+    )
+    .toBe("before");
+
+  // FR-005: the choice is attached to this site, and reopening the panel keeps it.
+  await expect
+    .poll(async () => {
+      const stored = await readExtensionStorage(popup);
+      const sites = (stored["sites"] as { displayMode?: string }[] | undefined) ?? [];
+      return sites.some((site) => site.displayMode === "above");
+    })
+    .toBe(true);
+  await popup.reload();
+  await popup.waitForSelector("#translate");
+  await expect(popup.locator('input[name="popup-mode"][value="above"]')).toBeChecked();
+});
+
+test("the panel names the chosen style in words and follows the settings page (T025)", async () => {
+  await seedProvider();
+  const page = await translate(pageUrlFor("news-article-a.html"));
+  await page.bringToFront();
+  const requestsBefore = stub.requests.length;
+
+  const popup = await extension.context.newPage();
+  await popup.setViewportSize({ width: 384, height: 720 });
+  await popup.goto(extension.popupUrl);
+  await popup.waitForSelector("#translate");
+
+  await expect(popup.locator("#style-current")).toHaveText("Current style: None");
+  // The tile is icon-only, but the radio still carries the style's catalogue name.
+  await expect(popup.getByRole("radio", { name: "Marker pen", exact: true })).toHaveCount(1);
+
+  await popup.check("#popup-display-style-marker");
+  await expect(popup.locator("#style-current")).toHaveText("Current style: Marker pen");
+  // FR-002/SC-003: already-rendered translations redraw with no new provider request.
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-ipt="target"]')
+        .first()
+        .evaluate((element) => element.getAttribute("data-ipt-style")),
+    )
+    .toBe("marker");
+  expect(stub.requests.length).toBe(requestsBefore);
+
+  // SC-006: arrow keys move the selection inside the group.
+  await popup.locator("#popup-display-style-marker").focus();
+  await popup.keyboard.press("ArrowDown");
+  await expect(popup.locator("#popup-display-style-marker-2")).toBeChecked();
+  await expect(popup.locator("#style-current")).toHaveText("Current style: Marker pen 2");
+
+  // FR-027: a change made on the settings page reaches the open panel without a reload.
+  await writeSettings(extension, {
+    sites: [{ sitePattern: "127.0.0.1", displayStyle: "quote", autoTranslate: false }],
+  });
+  await expect(popup.locator("#style-current")).toHaveText("Current style: Quote");
+  await expect(popup.locator("#popup-display-style-quote")).toBeChecked();
+});

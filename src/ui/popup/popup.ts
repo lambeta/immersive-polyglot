@@ -2,7 +2,7 @@ import { localize, t } from "../shared/i18n.js";
 import { clear, el, qs } from "../shared/dom.js";
 import { createSettingsStore } from "../../shared/settings.js";
 import { matchSite } from "../../shared/routing.js";
-import { resolveDisplayStyleForHost } from "../../shared/display-styles.js";
+import { displayStyleById, resolveDisplayStyleForHost } from "../../shared/display-styles.js";
 import { StylePicker } from "../shared/style-picker.js";
 import { previewIcon } from "../shared/style-preview.js";
 import type { DisplayMode, DisplayStyleId, Settings } from "../../shared/types.js";
@@ -70,9 +70,17 @@ function buildProviderSelect(): void {
   select.value = "";
 }
 
-function buildModeSelect(): void {
-  const select = qs<HTMLSelectElement>(document, "#mode");
-  select.value = displayModeForSite();
+/** The display mode is a three-way switch: one radio group, no hidden second control. */
+function modeRadios(): HTMLInputElement[] {
+  return Array.from(document.querySelectorAll<HTMLInputElement>('input[name="popup-mode"]'));
+}
+
+function applyMode(mode: DisplayMode): void {
+  for (const radio of modeRadios()) radio.checked = radio.value === mode;
+}
+
+function currentMode(): DisplayMode {
+  return (modeRadios().find((radio) => radio.checked)?.value ?? "bilingual") as DisplayMode;
 }
 
 function buildStylePicker(): void {
@@ -89,6 +97,15 @@ function buildStylePicker(): void {
     hostElement.append(stylePicker.element);
   }
   stylePicker.setValue(resolveDisplayStyleForHost(settings, host).styleId);
+  renderStyleName();
+}
+
+/** The fifteen tiles carry icons only; the name under them says which one is chosen. */
+function renderStyleName(): void {
+  if (!stylePicker) return;
+  qs<HTMLElement>(document, "#style-current").textContent = t("popupStyleCurrent", {
+    style: t(displayStyleById(stylePicker.value).nameKey),
+  });
 }
 
 /**
@@ -103,6 +120,7 @@ async function persistSiteStyle(style: DisplayStyleId): Promise<void> {
     return current;
   });
   settings = await store.load();
+  renderStyleName();
   void sendCommand({ type: "setDisplayStyle", style }).then(() => refreshStatus());
 }
 
@@ -115,10 +133,18 @@ function render(): void {
   const broken = qs<HTMLElement>(document, "#broken-rule");
   const cap = qs<HTMLElement>(document, "#cap");
   const usage = qs<HTMLElement>(document, "#usage");
+  const dot = qs<HTMLElement>(document, "#state-dot");
+
+  dot.dataset["state"] = current.state;
 
   const active = current.state !== "idle";
+  const enabledProviders = settings.providers.filter((provider) => provider.enabled);
   translateButton.textContent = active ? t("popupRestore") : t("popupTranslate");
-  translateButton.disabled = settings.providers.filter((provider) => provider.enabled).length === 0 && !active;
+  translateButton.disabled = enabledProviders.length === 0 && !active;
+  // FR-004: a disabled action always says why, and where to fix it.
+  const noProvider = qs<HTMLElement>(document, "#no-provider");
+  noProvider.hidden = enabledProviders.length > 0 || active;
+  noProvider.textContent = noProvider.hidden ? "" : t("popupNoProvider");
   cancelButton.hidden = !(current.state === "translating" || current.state === "segmenting");
 
   const counts = current.counts;
@@ -198,21 +224,27 @@ async function boot(): Promise<void> {
   // still act on the page the reader is looking at rather than on itself. A page can live in
   // another window (Playwright opens one per target), so fall back to a global query before
   // settling for the panel itself: an empty host would silently write an empty site pattern.
-  const httpTab = (candidates: chrome.tabs.Tab[]) =>
-    candidates.find((candidate) => candidate.active && candidate.url?.startsWith("http")) ??
-    candidates.find((candidate) => candidate.url?.startsWith("http"));
+  //
+  // Only a tab whose URL is really http(s) counts. `tab.url` is absent for pages the extension has
+  // no host permission for — the panel itself, about:blank, browser pages — so a "not an extension
+  // page" test is wrong: it matches every tab that hides its URL, including the panel's own.
+  const isWebPage = (candidate: chrome.tabs.Tab): boolean =>
+    typeof candidate.url === "string" && /^https?:/i.test(candidate.url);
   const all = await chrome.tabs.query({});
   const tab =
-    httpTab(query) ??
-    query.find((candidate) => !candidate.url?.startsWith("chrome-extension://")) ??
-    httpTab(all) ??
+    query.find((candidate) => candidate.active && isWebPage(candidate)) ??
+    query.find(isWebPage) ??
+    all.find((candidate) => candidate.active && isWebPage(candidate)) ??
+    all.find(isWebPage) ??
     query[0];
   tabId = tab?.id;
   host = tab?.url ? new URL(tab.url).hostname : "";
 
+  qs<HTMLElement>(document, "#site-host").textContent = host.length > 0 ? host : t("popupSiteNone");
+
   settings = await store.load();
   buildProviderSelect();
-  buildModeSelect();
+  applyMode(displayModeForSite());
   buildStylePicker();
 
   const reply = (await sendCommand({ type: "getJobStatus" })) as JobStatusPayload | null;
@@ -224,10 +256,13 @@ async function boot(): Promise<void> {
     providerOverride = value.length > 0 ? value : null;
   });
 
-  qs<HTMLSelectElement>(document, "#mode").addEventListener("change", (event) => {
-    const mode = (event.target as HTMLSelectElement).value as DisplayMode;
-    void persistSitePreference(mode).then(() => sendCommand({ type: "setDisplayMode", mode }));
-  });
+  for (const radio of modeRadios()) {
+    radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      const mode = currentMode();
+      void persistSitePreference(mode).then(() => sendCommand({ type: "setDisplayMode", mode }));
+    });
+  }
 
   qs<HTMLButtonElement>(document, "#translate").addEventListener("click", () => {
     if (status && status.state !== "idle") {
@@ -265,6 +300,8 @@ async function boot(): Promise<void> {
     void store.load().then((next) => {
       settings = next;
       stylePicker?.setValue(resolveDisplayStyleForHost(next, host).styleId);
+      renderStyleName();
+      applyMode(displayModeForSite());
     });
   });
 }

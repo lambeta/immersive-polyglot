@@ -123,6 +123,46 @@ test("the diagnostics view masks the credential and delete-all leaves nothing be
   await options.close();
 });
 
+test("caps live in two cards, each reporting where it was written (T037)", async () => {
+  await configureProviders(extension, [
+    {
+      id: "p_us2caps",
+      name: "Stub",
+      endpoint: `${stub.origin}/v1/chat/completions`,
+      model: "stub-model",
+      secret: "sk-e2e-caps-000111",
+    },
+  ]);
+  const options = await extension.openOptions();
+  await options.getByRole("button", { name: "Privacy and data" }).click();
+
+  // Two different questions ("this session" and "this site") do not share one form.
+  await expect(options.getByRole("heading", { name: "Volume caps" })).toBeVisible();
+  await expect(options.getByRole("heading", { name: "Per-site caps" })).toBeVisible();
+
+  await options.fill("#session-cap", "25");
+  await options.click("#limits-save");
+  await expect(options.locator("#limits-feedback")).toContainText("Saved");
+
+  await options.fill("#site-cap-pattern", "news.example");
+  await options.fill("#site-cap-value", "5");
+  await options.click("#site-cap-save");
+  await expect(options.locator("#site-cap-list li").first()).toContainText("news.example");
+
+  options.on("dialog", (dialog) => void dialog.accept());
+  await options.click("#delete-all");
+  await expect(options.locator("#privacy-feedback")).toContainText("deleted and verified empty", {
+    timeout: 15_000,
+  });
+  // The gate comes back with the defaults: a wiped profile cannot accept a credential unread.
+  await expect(options.getByRole("button", { name: "Providers" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(options.locator("#provider-credential")).toBeDisabled();
+  await options.close();
+});
+
 test("the disclosure is shown before the first credential can be entered", async () => {
   const options = await extension.openOptions();
   await expect(options.getByText("Before you enter a credential")).toBeVisible();

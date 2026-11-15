@@ -62,6 +62,21 @@
   "popupOpenSettings": {
     "message": "Settings"
   },
+  "popupModeShortBilingual": {
+    "message": "Below"
+  },
+  "popupModeShortAbove": {
+    "message": "Above"
+  },
+  "popupModeShortOnly": {
+    "message": "Only"
+  },
+  "popupStyleCurrent": {
+    "message": "Current style: {style}"
+  },
+  "popupSiteNone": {
+    "message": "No web page in this tab"
+  },
   "popupNoProvider": {
     "message": "No provider configured yet. Open settings to add one."
   },
@@ -97,6 +112,69 @@
   },
   "optionsTitle": {
     "message": "Immersive Polyglot settings"
+  },
+  "sideNote": {
+    "message": "No account, no analytics. Everything on this page stays in this browser profile."
+  },
+  "sideVersion": {
+    "message": "Version {version}"
+  },
+  "providersLede": {
+    "message": "Page text goes only to the endpoint you add here. Any OpenAI-compatible chat-completions endpoint works: a hosted model, a gateway, or a server on this machine."
+  },
+  "providersFormHeading": {
+    "message": "Provider details"
+  },
+  "providersSavedHeading": {
+    "message": "Saved providers"
+  },
+  "routingLede": {
+    "message": "Send a site, or a language pair, to a specific provider. The default applies whenever no rule matches."
+  },
+  "routingFormHeading": {
+    "message": "Add a rule"
+  },
+  "routingSavedHeading": {
+    "message": "Rules in force"
+  },
+  "sitesLede": {
+    "message": "Language, display mode and style for one site. A site preference overrides the settings for every page."
+  },
+  "sitesFormHeading": {
+    "message": "Add a site preference"
+  },
+  "sitesSavedHeading": {
+    "message": "Saved preferences"
+  },
+  "sitesGlobalHeading": {
+    "message": "Default for every page"
+  },
+  "glossaryLede": {
+    "message": "Terms that must come out the same way every time they appear."
+  },
+  "glossaryFormHeading": {
+    "message": "Add a term"
+  },
+  "glossarySavedHeading": {
+    "message": "Terms"
+  },
+  "displayLede": {
+    "message": "Choose how a translation is drawn on the page, and the type it is set in. The sample below shows the result before you save it."
+  },
+  "displaySampleSource": {
+    "message": "The ferry leaves the northern pier at seven."
+  },
+  "styleLede": {
+    "message": "A note sent with every request, to steer tone and vocabulary."
+  },
+  "privacyLede": {
+    "message": "What leaves this device, what is stored here, and how to erase it."
+  },
+  "diagnosticsLede": {
+    "message": "Everything this profile currently holds. Credentials appear masked; the secret is never printed."
+  },
+  "diagnosticsStoredHeading": {
+    "message": "Stored keys"
   },
   "tabProviders": {
     "message": "Providers"
@@ -299,6 +377,12 @@
   "styleTemperature": {
     "message": "Temperature"
   },
+  "styleInstructionHint": {
+    "message": "Sent with every request, after the translation rules. Leave it empty and no instruction is added."
+  },
+  "styleInstructionPlaceholder": {
+    "message": "Formal register; keep product names in English."
+  },
   "styleSave": {
     "message": "Save style"
   },
@@ -481,6 +565,9 @@
   },
   "limitsSession": {
     "message": "Session cap (segments, 0 = no cap)"
+  },
+  "limitsSiteHeading": {
+    "message": "Per-site caps"
   },
   "limitsSite": {
     "message": "Site cap (segments, 0 = no cap)"

@@ -121,6 +121,62 @@ test("identical paragraphs are translated once and reported as reuse", async () 
   expect(rendered.length).toBe(1);
 });
 
+test("an invalid provider is refused under its field, with nothing stored (T018)", async () => {
+  const options = await extension.openOptions();
+  await options.check("#acknowledge");
+  await options.fill("#provider-endpoint", `${stub.origin}/v1/chat/completions`);
+  await options.fill("#provider-credential", "sk-e2e-invalid-0001");
+  await options.fill("#provider-model", "stub-model");
+  // A fresh profile pre-fills the DeepSeek name, so the refusal path clears it on purpose.
+  await options.fill("#provider-name", "");
+
+  await options.click("#provider-save");
+
+  await expect(options.locator("#error-name")).toContainText("characters and unique");
+  await expect(options.locator("#provider-name")).toHaveAttribute("aria-invalid", "true");
+  await expect(options.locator("#provider-name")).toBeFocused();
+  // Nothing was written, and nothing claims success.
+  await expect(options.locator("#provider-feedback")).toBeEmpty();
+  const stored = await options.evaluate(() => chrome.storage.local.get("providers"));
+  expect((stored["providers"] as unknown[] | undefined) ?? []).toEqual([]);
+  await options.close();
+});
+
+test("a saved provider is listed with what it will call, and its check is recorded (T019)", async () => {
+  const options = await extension.openOptions();
+  await expect(options.locator("main .panel:not([hidden])")).toHaveCount(1);
+  await expect(options.locator("#panel-providers")).toBeVisible();
+
+  await options.check("#acknowledge");
+  await options.fill("#provider-name", "Home stub");
+  await options.fill("#provider-endpoint", `${stub.origin}/v1/chat/completions`);
+  await options.fill("#provider-credential", "sk-e2e-abcdef123456");
+  await options.fill("#provider-model", "stub-model");
+  await options.click("#provider-save");
+  await expect(options.locator("#provider-feedback")).toContainText("Saved");
+
+  const row = options.locator("#provider-list li").first();
+  await expect(row).toContainText("Home stub");
+  await expect(row).toContainText(`${stub.origin}/v1/chat/completions`);
+  await expect(row).toContainText("stub-model");
+  await expect(row).toContainText("Never checked");
+
+  await options.click("#provider-test");
+  await expect(options.locator("#provider-feedback")).toContainText("Connection works", {
+    timeout: 20_000,
+  });
+  await expect(row).toContainText("Connection works");
+  await expect(row).toContainText("Last checked");
+
+  // FR-028: the stored secret is only ever a mask, and only in a placeholder.
+  await expect(options.locator("#provider-credential")).toHaveValue("");
+  await expect(options.locator("#provider-credential")).toHaveAttribute(
+    "placeholder",
+    /Saved.*••••/,
+  );
+  await options.close();
+});
+
 async function seedProvider(): Promise<void> {
   const { configureProviders } = await import("../support/e2e-fixtures.js");
   await configureProviders(extension, [
