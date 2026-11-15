@@ -435,3 +435,38 @@ describe("detectLanguage", () => {
     expect(detectLanguage("— !? …")).toBe("und");
   });
 });
+describe("product output is never source text", () => {
+  // A rendered translation is marked data-ipt="target" (contracts/page-markup-ownership.md §2).
+  const SOURCE = "the harbour records describe cargo moving inland by barge";
+  const RENDERED = "translated paragraph that must never be sent again";
+
+  it("yields no unit for a rendered translation and does not change the skip count", () => {
+    const withOutput = segmented(
+      "<body><p>" + SOURCE + "</p><div data-ipt=\"target\" lang=\"zh\">" + RENDERED + "</div></body>",
+    );
+    const withoutOutput = segmented("<body><p>" + SOURCE + "</p></body>");
+
+    expect(texts(queuedOf(withOutput.result))).toEqual([SOURCE]);
+    expect(texts(withOutput.result.units).join(" ")).not.toContain(RENDERED);
+    expect(withOutput.result.skipped).toBe(withoutOutput.result.skipped);
+  });
+
+  it("keeps a list item's own text when its translation sits inside it", () => {
+    const { result } = segmented(
+      "<body><ul><li>" + SOURCE + "<div data-ipt=\"target\" lang=\"zh\">" + RENDERED + "</div></li></ul></body>",
+    );
+
+    expect(texts(queuedOf(result))).toEqual([SOURCE]);
+    expect(texts(result.units).join(" ")).not.toContain(RENDERED);
+  });
+
+  it("segments a page without markers exactly as before", () => {
+    const { result } = segmented(
+      "<body><h1>Title</h1><p>First paragraph</p><ul><li>Item one</li></ul></body>",
+    );
+
+    expect(texts(result.units)).toEqual(["Title", "First paragraph", "Item one"]);
+    expect(result.units.every((unit) => unit.state === "queued")).toBe(true);
+    expect(result.skipped).toBe(0);
+  });
+});

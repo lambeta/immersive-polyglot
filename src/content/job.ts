@@ -284,6 +284,9 @@ export class TranslationJob {
   }
 
   #applyReply(batchUnits: TranslationUnit[], reply: BatchReply): void {
+    // FR-011/FR-012: a cancelled or restored run discards late results instead of rendering them
+    // into a page that has already been put back (research R6).
+    if (this.#cancelled) return;
     const failed = new Set(reply.failedIndices);
     for (const result of reply.results) {
       const unit = batchUnits[result.index];
@@ -443,6 +446,9 @@ export class TranslationJob {
   }
 
   restore(): { replayed: number; residue: number } {
+    // Restoring is terminal for the run: without this, a batch already in flight would render into a
+    // page that has just been put back (FR-011; research R6).
+    this.cancel();
     const scrollY = this.#options.view?.scrollY ?? 0;
     const result = restorePage(this.#journal, {
       document: this.#options.document,

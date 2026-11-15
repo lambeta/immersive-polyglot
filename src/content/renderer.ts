@@ -22,8 +22,10 @@ import type { DisplayMode, DisplayStyleId, TranslationTypography } from "../shar
  * (research R2).
  */
 
-export const TARGET_MARKER = "target";
-export const SOURCE_MARKER = "source";
+import { SOURCE_MARKER, TARGET_MARKER } from "./markers.js";
+
+// Re-exported so every existing import path keeps working; markers.ts is the single definition.
+export { SOURCE_MARKER, TARGET_MARKER } from "./markers.js";
 
 const INHERITED_PROPERTIES = [
   "font-size",

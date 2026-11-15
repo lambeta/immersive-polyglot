@@ -1,4 +1,5 @@
 import type { SkipReason, TranslationUnit } from "../shared/types.js";
+import { MARKER_ATTRIBUTE, TARGET_MARKER } from "./markers.js";
 
 /**
  * Block-level segmentation (research R6). The walk produces one translation unit per leaf block,
@@ -450,6 +451,9 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
   const stack = initialElements(root);
   while (stack.length > 0) {
     const element = stack.pop() as Element;
+    // Product output is not page content: prune it before any text is read, and never count it as a
+    // passage the reader would see skipped (contracts/page-markup-ownership.md §3, FR-005).
+    if (isProductOutput(element)) continue;
     const tag = tagOf(element);
     if (SILENT_TAGS.has(tag)) continue;
 
@@ -467,7 +471,9 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
       continue;
     }
 
-    const text = normalizeText(element.textContent ?? "");
+    // subtreeText skips product output and keeps block boundaries apart; for a leaf candidate it is
+    // exactly the element's own text.
+    const text = subtreeText(element);
     if (!hasLetters(text)) {
       pushSkipped(element, text, "empty");
       continue;
@@ -585,8 +591,17 @@ function elementChildren(parent: ParentNode): Element[] {
   return children;
 }
 
+/** Element children minus product output: a translation container never counts as page structure. */
+function readableChildren(parent: ParentNode): Element[] {
+  return elementChildren(parent).filter((child) => !isProductOutput(child));
+}
+
+function isProductOutput(element: Element): boolean {
+  return element.getAttribute(MARKER_ATTRIBUTE) === TARGET_MARKER;
+}
+
 function pushChildren(element: Element, stack: Element[]): void {
-  const children = elementChildren(element);
+  const children = readableChildren(element);
   for (let index = children.length - 1; index >= 0; index -= 1) {
     const child = children[index];
     if (child !== undefined) stack.push(child);
@@ -598,7 +613,7 @@ function tagOf(element: Element): string {
 }
 
 function hasBlockDescendant(element: Element): boolean {
-  for (const child of elementChildren(element)) {
+  for (const child of readableChildren(element)) {
     if (BLOCK_TAGS.has(tagOf(child))) return true;
     if (hasBlockDescendant(child)) return true;
   }
@@ -660,6 +675,7 @@ function subtreeText(element: Element): string {
     }
     if (node.nodeType !== 1) return;
     const child = node as Element;
+    if (isProductOutput(child)) return;
     const isBlock = BLOCK_TAGS.has(tagOf(child));
     if (isBlock) out += " ";
     for (let inner = child.firstChild; inner !== null; inner = inner.nextSibling) visit(inner);

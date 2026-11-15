@@ -26,6 +26,10 @@ travels only to the endpoint you configure; page text travels only there too.
   original state — not "close to it".
 - **Honest failures.** Every failure has a class, a message and a recovery action. Nothing is ever
   shown as a translation until a real translation arrives.
+- **Pressing translate again is harmless.** While a page is being translated, or once it already
+  shows its translation, pressing the control again starts nothing, requests nothing and adds no
+  second translation — one passage always keeps exactly one. To translate a page again, turn
+  translation off first.
 
 ## Ratified stack
 

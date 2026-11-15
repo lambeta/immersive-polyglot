@@ -4,6 +4,8 @@
  * (edge cases; FR-008).
  */
 
+import { MARKER_ATTRIBUTE } from "./markers.js";
+
 export interface PageObserverOptions {
   root: ParentNode;
   /** Called with elements that arrived after the initial pass, debounced and de-duplicated. */
@@ -74,7 +76,7 @@ export class PageObserver {
         const element = node as Element;
         if (IGNORED_TAGS.has(element.tagName)) continue;
         // Our own injection: never a reason to translate again.
-        if (this.#isOurs(element) || element.closest("[data-ipt]")) continue;
+        if (this.#isOurs(element) || element.closest(`[${MARKER_ATTRIBUTE}]`)) continue;
         if (this.#seen.has(element)) continue;
         this.#queue(element);
       }
@@ -82,7 +84,10 @@ export class PageObserver {
   }
 
   #isOurs(element: Element): boolean {
-    return element.hasAttribute("data-ipt") || element.closest("[data-ipt]") !== null;
+    return (
+      element.hasAttribute(MARKER_ATTRIBUTE) ||
+      element.closest(`[${MARKER_ATTRIBUTE}]`) !== null
+    );
   }
 
   #queue(element: Element): void {

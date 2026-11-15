@@ -3,6 +3,7 @@ import { Renderer } from "../../src/content/renderer.js";
 import { Journal, domHash, restorePage } from "../../src/content/restorer.js";
 import { buildPage, nodesIn, snapshotJournal } from "./helpers.js";
 import {
+  DeferredCaller,
   FakeCaller,
   PREFIX,
   abstractPage,
@@ -211,3 +212,51 @@ describe("multi-part blocks restore exactly", () => {
   });
 });
 
+describe("restoring a run that is still in flight", () => {
+  it("renders nothing after the late reply arrives", async () => {
+    const caller = new DeferredCaller();
+    const { page, job } = startJob(pageHtml, { caller });
+    const running = job.run();
+    job.restore();
+    caller.release();
+    await running;
+
+    expect(page.document.querySelectorAll('[data-ipt="target"]')).toHaveLength(0);
+    expect(page.document.querySelectorAll("[data-ipt]")).toHaveLength(0);
+  });
+
+  it("leaves the page's own blocks in place", () => {
+    const baseline = domHash(buildPage(pageHtml).body);
+    const { page, job } = startJob(pageHtml);
+    job.restore();
+
+    expect(domHash(page.body)).toBe(baseline);
+    expect(page.body.querySelectorAll("p")).toHaveLength(2);
+    expect(page.body.querySelector("#title")?.getAttribute("data-ipt")).toBeNull();
+  });
+
+  it("restores exactly after a replayed run and a replacement", async () => {
+    const baseline = domHash(buildPage(pageHtml).body);
+    const first = startJob(pageHtml);
+    await first.job.run();
+    first.job.restore();
+
+    const second = new TranslationJob({
+      document: first.page.document,
+      root: first.page.body,
+      settings,
+      providerId: "p1",
+      displayMode: "bilingual",
+      targetLang: "zh",
+      sourceLang: "en",
+      caller: new FakeCaller(),
+      view: first.page.window,
+    });
+    await second.run();
+    expect(first.page.document.querySelectorAll('[data-ipt="target"]').length).toBeGreaterThan(0);
+    second.restore();
+
+    expect(domHash(first.page.body)).toBe(baseline);
+    expect(first.page.document.querySelectorAll("[data-ipt]")).toHaveLength(0);
+  });
+});

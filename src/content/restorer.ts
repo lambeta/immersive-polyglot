@@ -104,7 +104,21 @@ export interface RestoreResult {
 export function restorePage(journal: Journal, options: { document?: Document; scrollY?: number } = {}): RestoreResult {
   const doc = options.document ?? document;
   const targetScroll = options.scrollY ?? doc.defaultView?.scrollY ?? 0;
-  const replayed = journal.replay();
+  // Removing the translation shortens the page, and Chromium's scroll anchoring then moves the
+  // reader to compensate. Pin the position across the replay so turning translation off leaves the
+  // reader exactly where they were (SC-008, and feature 005 SC-005).
+  const root = doc.documentElement;
+  const previousAnchor = root?.style.getPropertyValue("overflow-anchor") ?? "";
+  if (root) root.style.setProperty("overflow-anchor", "none");
+  let replayed = 0;
+  try {
+    replayed = journal.replay();
+  } finally {
+    if (root) {
+      if (previousAnchor.length > 0) root.style.setProperty("overflow-anchor", previousAnchor);
+      else root.style.removeProperty("overflow-anchor");
+    }
+  }
 
   const residue = doc.querySelectorAll("[data-ipt]").length;
   if (residue > 0) {

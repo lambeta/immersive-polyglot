@@ -128,3 +128,94 @@ export async function waitForContentScript(page: Page): Promise<void> {
     timeout: 20_000,
   });
 }
+/** Fires the same command N times over the real wire without awaiting each other. */
+export async function repeatCommand(
+  extension: LaunchedExtension,
+  pageUrl: string,
+  message: Record<string, unknown>,
+  times: number,
+): Promise<void> {
+  await extension.serviceWorker.evaluate(
+    async ({ url, command, count }) => {
+      const tabs = await chrome.tabs.query({});
+      const tab = tabs.find((candidate) => candidate.url?.startsWith(url));
+      if (!tab?.id) throw new Error(`no tab for ${url}`);
+      await Promise.all(
+        Array.from({ length: count }, () => chrome.tabs.sendMessage(tab.id as number, command)),
+      );
+    },
+    { url: pageUrl, command: message, count: times },
+  );
+}
+
+/** Presses the popup's translate control N times inside one animation frame (the reader's action). */
+export async function clickTranslate(page: Page, times = 5): Promise<void> {
+  await page.evaluate((count) => {
+    const button = document.querySelector<HTMLButtonElement>("#translate");
+    if (!button) throw new Error("no #translate control");
+    for (let index = 0; index < count; index += 1) button.click();
+  }, times);
+}
+
+/** Selects the contents of one block so `translateSelection` has something to resolve. */
+export async function selectPassage(page: Page, selector: string): Promise<void> {
+  await page.evaluate((sel) => {
+    const element = document.querySelector(sel);
+    if (!element) throw new Error(`no element for ${sel}`);
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const selection = window.getSelection();
+    if (!selection) throw new Error("no selection object");
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }, selector);
+}
+
+export interface PassageTranslations {
+  passage: string;
+  count: number;
+}
+
+/**
+ * Counts the rendered translations that belong to each source passage: a container placed inside the
+ * source (list items, table cells) or immediately beside it. `unattributed` is the number of
+ * translation containers that belong to no source — anything above zero is a defect of its own.
+ */
+export async function translationsPerPassage(page: Page): Promise<PassageTranslations[]> {
+  const result = await page.evaluate(() => {
+    const sources = Array.from(document.querySelectorAll('[data-ipt="source"]'));
+    const perSource = sources.map((source) => {
+      let count = source.querySelectorAll('[data-ipt="target"]').length;
+
+      // Beside the source in the direction the renderer placed it: a container belongs to exactly
+      // one source, so a following sibling is never also counted for the source before it.
+      const next = source.nextElementSibling;
+      if (next && next.getAttribute("data-ipt") === "target") {
+        let node: Element | null = next;
+        while (node && node.getAttribute("data-ipt") === "target") {
+          if (node.getAttribute("data-ipt-position") !== "before") count += 1;
+          node = node.nextElementSibling;
+        }
+      }
+      const previous = source.previousElementSibling;
+      if (previous && previous.getAttribute("data-ipt") === "target") {
+        let node: Element | null = previous;
+        while (node && node.getAttribute("data-ipt") === "target") {
+          if (node.getAttribute("data-ipt-position") === "before") count += 1;
+          node = node.previousElementSibling;
+        }
+      }
+      return { passage: (source.textContent ?? "").trim().slice(0, 48), count };
+    });
+    const attributed = perSource.reduce((total, entry) => total + entry.count, 0);
+    const targets = document.querySelectorAll('[data-ipt="target"]').length;
+    return { perSource, unattributed: targets - attributed };
+  });
+  return result.perSource;
+}
+
+/** The largest number of translations any one passage carries — 1 is healthy, 2+ is the defect. */
+export async function maxTranslationsPerPassage(page: Page): Promise<number> {
+  const perPassage = await translationsPerPassage(page);
+  return perPassage.reduce((max, entry) => Math.max(max, entry.count), 0);
+}

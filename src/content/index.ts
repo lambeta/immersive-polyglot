@@ -12,7 +12,8 @@ import { resolveTypography } from "../shared/settings.js";
 import type { DisplayMode, DisplayStyleId, ErrorClass, Settings } from "../shared/types.js";
 import { RequestLimiter, VolumeBudget } from "./limiter.js";
 import { PageObserver } from "./observer.js";
-import { TranslationJob, type BatchCaller, type BatchReply, type BatchRequestPayload } from "./job.js";
+import { TranslationJob, type BatchCaller, type BatchReply, type BatchRequestPayload, type JobResult } from "./job.js";
+import { RunSlot, sameTarget, type RunOutcome, type RunTarget } from "./run-slot.js";
 import { selectedBlocks } from "./selection.js";
 
 /**
@@ -217,6 +218,10 @@ function matches(pattern: string, host: string): boolean {
 
 let job: TranslationJob | null = null;
 let observer: PageObserver | null = null;
+/** The page's single run slot: at most one run, however often the reader activates (data-model §1). */
+const slot = new RunSlot();
+/** What the current — or last finished — run was claimed for; supplies `sameTarget` (data-model §2). */
+let claimedTarget: RunTarget | null = null;
 let cachedSettings: Settings | null = null;
 let lastStatus: JobStatusPayload = {
   jobId: null,
@@ -244,13 +249,62 @@ async function settings(force = false): Promise<Settings> {
   return cachedSettings;
 }
 
-async function startTranslation(options: { providerOverrideId?: string; elements?: Element[] } = {}): Promise<void> {
-  const reason = unsupportedReason();
-  if (reason) {
+interface Activation {
+  absorbed: boolean;
+  reason?: "running" | "repeat";
+}
+
+/**
+ * Claim the page's run slot **synchronously**, then continue asynchronously unless the activation was
+ * absorbed. The claim happens before the first `await`, which is what stops two rapid activations
+ * from both starting a run (FR-001..FR-003; research R3).
+ */
+function activate(
+  options: { providerOverrideId?: string; elements?: Element[] } = {},
+): Activation {
+  const requested: RunTarget =
+    options.elements && options.elements.length > 0
+      ? { kind: "selection", elements: options.elements }
+      : { kind: "page" };
+
+  const decision = slot.claim({ sameTarget: sameTarget(claimedTarget, requested) });
+  // FR-013: an absorbed activation returns here — before settings(true), before resolveProvider,
+  // before new VolumeBudget(...) and before any TranslationJob. It reads no storage, segments
+  // nothing, requests nothing and consumes no allowance; the ordering is the guarantee.
+  if (decision === "absorb-running") return { absorbed: true, reason: "running" };
+  if (decision === "absorb-repeat") return { absorbed: true, reason: "repeat" };
+
+  if (decision === "replace") {
+    // At most one journal has ever written to this page: discard the previous run's output first,
+    // so the page never holds output from two runs (FR-008; research R5).
+    if (job) {
+      job.cancel();
+      job.restore();
+      job = null;
+    }
+    observer?.stop();
+    observer = null;
+  }
+
+  claimedTarget = requested;
+  void runTranslation(requested, options).catch(() => {
+    // A thrown continuation must never leave the slot in "starting", or every later press is absorbed.
+    slot.settle("failed");
+  });
+  return { absorbed: false };
+}
+
+async function runTranslation(
+  requested: RunTarget,
+  options: { providerOverrideId?: string; elements?: Element[] },
+): Promise<void> {
+  const unsupported = unsupportedReason();
+  if (unsupported) {
+    slot.settle("failed");
     broadcast({
       ...lastStatus,
       state: "failed",
-      failure: { errorClass: reason as ErrorClass, message: reason },
+      failure: { errorClass: unsupported as ErrorClass, message: unsupported },
     });
     return;
   }
@@ -265,6 +319,7 @@ async function startTranslation(options: { providerOverrideId?: string; elements
   });
 
   if (!decision.providerId) {
+    slot.settle("failed");
     broadcast({
       ...lastStatus,
       state: "failed",
@@ -274,9 +329,10 @@ async function startTranslation(options: { providerOverrideId?: string; elements
   }
 
   const provider = current.providers.find((candidate) => candidate.id === decision.providerId);
-  if (!provider) return;
-
-  if (job) job.cancel();
+  if (!provider) {
+    slot.settle("failed");
+    return;
+  }
 
   const budget = new VolumeBudget({
     sessionCapSegments: current.limits.sessionCapSegments,
@@ -284,7 +340,7 @@ async function startTranslation(options: { providerOverrideId?: string; elements
     siteCapSegments: current.limits.siteCaps[location.hostname] ?? 0,
   });
 
-  job = new TranslationJob({
+  const runJob = new TranslationJob({
     document,
     root: document.body,
     settings: current,
@@ -302,13 +358,20 @@ async function startTranslation(options: { providerOverrideId?: string; elements
     },
     view: window,
   });
+  job = runJob;
+  slot.markRunning();
 
   startObserver();
 
-  if (options.elements && options.elements.length > 0) {
-    await job.translateElements(options.elements);
-  } else {
-    await job.run();
+  let outcome: RunOutcome = "failed";
+  try {
+    const result: JobResult =
+      requested.kind === "selection" && options.elements && options.elements.length > 0
+        ? await runJob.translateElements(options.elements)
+        : await runJob.run();
+    outcome = result.state === "cancelled" ? "cancelled" : result.failure ? "failed" : "completed";
+  } finally {
+    slot.settle(outcome);
   }
 }
 
@@ -329,25 +392,49 @@ function restore(): void {
   observer?.stop();
   observer = null;
   if (job) {
+    // Stop the run before replaying: a reply still on the wire must not render into a restored page
+    // (FR-011). The journal is the only restoration mechanism (FR-010).
+    job.cancel();
+    portClient.cancelPending();
     job.restore();
     job = null;
   }
+  // The slot describes a page that no longer holds a translation: the next activation starts clean
+  // (data-model I4).
+  slot.reset();
+  claimedTarget = null;
   broadcast({ ...lastStatus, jobId: null, state: "idle", failure: undefined });
+}
+
+/**
+ * The reply of an activation. `absorbed` is diagnostic: no shipped surface displays it, and the status
+ * broadcast stays the only state the reader sees (contracts/activation-lifecycle.md §5).
+ */
+function replyFor(activation: Activation): { ok: true; absorbed?: true; reason?: "running" | "repeat" } {
+  if (!activation.absorbed) return { ok: true };
+  return {
+    ok: true,
+    absorbed: true,
+    ...(activation.reason ? { reason: activation.reason } : {}),
+  };
 }
 
 function handleCommand(command: CommandMessage, sendResponse: (reply: unknown) => void): void {
   switch (command.type) {
-    case "translatePage":
-      void startTranslation({ ...(command.providerOverrideId ? { providerOverrideId: command.providerOverrideId } : {}) });
-      sendResponse({ ok: true });
+    case "translatePage": {
+      const activation = activate({
+        ...(command.providerOverrideId ? { providerOverrideId: command.providerOverrideId } : {}),
+      });
+      sendResponse(replyFor(activation));
       return;
+    }
     case "toggleTranslation":
       if (job) {
         restore();
-      } else {
-        void startTranslation();
+        sendResponse({ ok: true });
+        return;
       }
-      sendResponse({ ok: true });
+      sendResponse(replyFor(activate()));
       return;
     case "translateSelection": {
       const blocks = selectedBlocks(document);
@@ -355,8 +442,7 @@ function handleCommand(command: CommandMessage, sendResponse: (reply: unknown) =
         sendResponse({ ok: false, errorClass: "selectionEmpty" });
         return;
       }
-      void startTranslation({ elements: blocks });
-      sendResponse({ ok: true });
+      sendResponse(replyFor(activate({ elements: blocks })));
       return;
     }
     case "cancelJob":
