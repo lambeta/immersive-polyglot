@@ -232,3 +232,17 @@ row; everything else hardens it.
   follow-up.
 - Commit after each task or logical group.
 - Stop at each checkpoint to validate the story independently.
+
+---
+
+## Phase 7: Convergence
+
+- [ ] T045 Prove that reused and skipped work is excluded at the scale SC-005 states: on a page where 60 % of the displayed translations came from reuse the record equals the fresh responses' spend exactly, and a skipped (capped) passage adds neither tokens nor price — add the tests T025 named in `tests/unit/job-spend-refusal.test.ts`, or fold them into `tests/dom/job-spend.test.ts` and correct T025's citation per SC-005, FR-018 (missing)
+- [ ] T046 Replace the vacuous FR-008 assertion in `tests/unit/pricing.test.ts` (it calls `estimateSpend` twice with identical input and compares the results, so it cannot fail) with one that prices a usage report carrying no cache split and asserts it equals the same usage with zero cache-hit tokens — every prompt token at the miss rate — and add the job-level twin in `tests/dom/job-spend.test.ts` where `cacheHitTokens`/`cacheMissTokens` are absent per FR-008, SC-007 (partial)
+- [ ] T047 Measure the priced spend row, not only the muted-note state, in `tests/e2e/spend-surfaces.spec.ts`: 200 % zoom, labels injected 30 % longer, light and dark, no clipped label, no overlapping row, no sideways overflow, panel under 600 px — and let `span.usage__basis` wrap in `src/ui/popup/popup.css` instead of `white-space: nowrap`, so FR-022's no-sideways-overflow promise holds when the basis cannot fit one line per FR-022, SC-010 (partial)
+- [ ] T048 Strengthen the live-update test in `tests/e2e/spend.spec.ts` to SC-008's shape: sample 20 consecutive translation arrivals, assert each arrival is reflected in both the token figure and the price within one second, and that neither figure ever moves backwards per SC-008, FR-016 (partial)
+- [ ] T049 Add the refusal-precedence tests T023 named in `tests/unit/pricing-refusals.test.ts`, or fold them into `tests/unit/pricing.test.ts` and correct T023's citation: a run that is at once on an unpriced provider, on an unlisted model and missing its split reports exactly one reason in the order `noPriceList` → `modelNotPriced` → `usageIncomplete`, and no amount is ever produced without the provider and snapshot basis that justify it per FR-006, FR-010, FR-026 (missing)
+- [ ] T050 Take the pricing tier at the instant the request is actually sent rather than when the batch is queued, in `src/content/job.ts`'s `#runBatch` — `requestedAt` is read before `limiter.run`, so a batch that waits behind the concurrency ceiling is priced at its enqueue tier — and pin it with a test that queues a batch across a peak boundary per FR-011 (partial)
+- [ ] T051 Correct the comment above the model table in `src/shared/price-catalog.ts`, which says `deepseek-chat` and `deepseek-reasoner` are "deliberately absent (FR-028, owner confirmation)" while the alias table immediately below prices both at the Flash rate; the comment contradicts FR-028 and the spec's 2026-11-16 owner correction, and invites a future reader to delete a required alias per FR-028 (contradicts)
+- [ ] T052 Reconcile FR-013's six-decimal ceiling with the spec's rule that a non-zero estimate is never shown as zero: `formatAmount` currently prints seven or eight decimals below ¥0.000001 (`0.0000004` for 4e-7, reachable because one off-peak cache-hit token is ¥0.00000002). Choose one rule, express it in `src/shared/pricing.ts` with a test, and record the amendment the specification needs per FR-013 (contradicts)
+
