@@ -127,6 +127,7 @@ async function handleTranslateBatch(
       type: "batchResult",
       requestId: request.requestId,
       results: outcome.results,
+      ...(outcome.usage ? { usage: outcome.usage } : {}),
     });
   } catch (error) {
     const providerError = error instanceof ProviderError ? error : null;

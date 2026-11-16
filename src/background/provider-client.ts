@@ -2,6 +2,7 @@ import { sanitizeTranslatedText } from "../shared/sanitize.js";
 import type {
   ProviderErrorClass,
   TranslationProvider,
+  UsageReport,
 } from "../shared/types.js";
 
 /**
@@ -250,6 +251,57 @@ export interface BatchOutcome {
   errorClass?: ProviderErrorClass;
   retryable: boolean;
   retryAfterMs?: number;
+  /** Feature 008: what the provider says this response consumed, when it says anything. */
+  usage?: UsageReport;
+}
+
+function nonNegativeInteger(value: unknown): number | undefined {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= Number.MAX_SAFE_INTEGER
+    ? value
+    : undefined;
+}
+
+/**
+ * Feature 008, provider-usage contract §2–§3: normalise the OpenAI-compatible usage block. An
+ * invalid field is dropped; a report with no usable number is no report at all. Nothing is repaired.
+ */
+export function parseUsage(payload: unknown): UsageReport | undefined {
+  if (!payload || typeof payload !== "object") return undefined;
+  const usage = (payload as Record<string, unknown>)["usage"];
+  if (!usage || typeof usage !== "object" || Array.isArray(usage)) return undefined;
+  const record = usage as Record<string, unknown>;
+
+  const details = record["prompt_tokens_details"];
+  const cachedTokens =
+    details && typeof details === "object" && !Array.isArray(details)
+      ? nonNegativeInteger((details as Record<string, unknown>)["cached_tokens"])
+      : undefined;
+
+  const prompt = nonNegativeInteger(record["prompt_tokens"]);
+  const completion = nonNegativeInteger(record["completion_tokens"]);
+  const total = nonNegativeInteger(record["total_tokens"]);
+  const hit = nonNegativeInteger(record["prompt_cache_hit_tokens"]) ?? cachedTokens;
+  const reportedMiss = nonNegativeInteger(record["prompt_cache_miss_tokens"]);
+
+  const hasSplit = prompt !== undefined && completion !== undefined;
+  const hasTotal = total !== undefined;
+  // A lone half of the split cannot become a token count without inventing the other half.
+  if (!hasSplit && !hasTotal) return undefined;
+
+  const miss =
+    reportedMiss ??
+    (hit !== undefined && prompt !== undefined ? Math.max(0, prompt - hit) : undefined);
+
+  const report: UsageReport = {};
+  if (prompt !== undefined) report.promptTokens = prompt;
+  if (completion !== undefined) report.completionTokens = completion;
+  if (total !== undefined) report.totalTokens = total;
+  if (hit !== undefined) report.cacheHitTokens = hit;
+  if (miss !== undefined) report.cacheMissTokens = miss;
+  return report;
 }
 
 export async function callProvider(request: ProviderCall): Promise<BatchOutcome> {
@@ -302,7 +354,9 @@ export async function callProvider(request: ProviderCall): Promise<BatchOutcome>
     }
 
     const content = unwrapContent(payload);
-    return parseBatchOutput(content, segments.length);
+    const outcome = parseBatchOutput(content, segments.length);
+    const usage = parseUsage(payload);
+    return usage ? { ...outcome, usage } : outcome;
   } catch (error) {
     if (error instanceof ProviderError) throw error;
     if (timedOut) {

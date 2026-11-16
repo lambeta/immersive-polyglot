@@ -51,6 +51,9 @@ export async function launchWithExtension(options: { headless?: boolean } = {}):
     args: [
       `--disable-extensions-except=${EXTENSION_DIR}`,
       `--load-extension=${EXTENSION_DIR}`,
+      // Feature 008: lets a test point at the priced provider's host without leaving the machine.
+      // The stub answers on 127.0.0.1; no real request ever reaches this name.
+      "--host-resolver-rules=MAP api.deepseek.com 127.0.0.1",
     ],
   });
 

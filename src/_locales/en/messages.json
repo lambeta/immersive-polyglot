@@ -703,5 +703,26 @@
   },
   "displayFontSizeInvalid": {
     "message": "Enter a whole percentage from 50 to 200 in steps of 5."
+  },
+  "popupSpendTokens": {
+    "message": "{count} tokens spent"
+  },
+  "popupSpendPriceCny": {
+    "message": "≈ ¥{amount}"
+  },
+  "popupSpendPriceUsd": {
+    "message": "≈ ${amount}"
+  },
+  "popupSpendBasis": {
+    "message": "{provider} list · {snapshot}"
+  },
+  "popupSpendNoPriceList": {
+    "message": "No published price for this provider."
+  },
+  "popupSpendModelNotPriced": {
+    "message": "No published price for {model}."
+  },
+  "popupSpendUsageIncomplete": {
+    "message": "The provider did not report enough usage to price this run."
   }
 }

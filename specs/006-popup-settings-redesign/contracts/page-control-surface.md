@@ -76,8 +76,12 @@ Each condition is independent, sits under the primary action, and never replaces
 ## 6. Session record
 
 One row per fact, hairline-separated, 13 px muted: passages translated, characters sent, passages
-reused, passages skipped, passages failed. The whole section, heading included, is absent when the list
-would be empty (`:has(#usage:empty)`). It is a record, not a chart: no bars, no money, no estimates.
+reused, passages skipped, passages failed. _Amended by feature 008 (2026-11-16):_ one further row carries
+the tokens the provider reported for the translations on the page and, when the provider's prices ship
+with the product, a **labelled list-price estimate** with its provider and snapshot date on the same
+row; when no price exists, one muted line inside that row names the reason. The whole section, heading
+included, is absent when the list would be empty (`:has(#usage:empty)`). It is a record, not a chart:
+no bars, and no figure that is not either measured or a labelled estimate.
 
 ## 7. Motion
 

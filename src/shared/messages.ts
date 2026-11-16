@@ -6,6 +6,7 @@ import type {
   JobState,
   SessionUsageRecord,
   TranslationTypography,
+  UsageReport,
 } from "./types.js";
 
 /**
@@ -33,7 +34,13 @@ export type PortRequest =
 
 export type PortResponse =
   | { type: "chunk"; requestId: string; index: number; text: string }
-  | { type: "batchResult"; requestId: string; results: { index: number; text: string }[] }
+  | {
+      type: "batchResult";
+      requestId: string;
+      results: { index: number; text: string }[];
+      /** Feature 008: absent when the provider reported no usage. */
+      usage?: UsageReport;
+    }
   | {
       type: "batchError";
       requestId: string;
@@ -227,6 +234,38 @@ export function parsePortRequest(raw: unknown): PortRequest {
   }
 }
 
+const USAGE_FIELDS = [
+  "promptTokens",
+  "completionTokens",
+  "totalTokens",
+  "cacheHitTokens",
+  "cacheMissTokens",
+] as const;
+
+/**
+ * Feature 008, message-usage contract §3: usage travels only as five finite non-negative integers.
+ * An object with any invalid field is dropped whole — a partially believable report is a guess.
+ */
+export function parseUsageReport(value: unknown): UsageReport | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  const usage: UsageReport = {};
+  for (const field of USAGE_FIELDS) {
+    if (!(field in record)) continue;
+    const raw = record[field];
+    if (
+      typeof raw !== "number" ||
+      !Number.isInteger(raw) ||
+      raw < 0 ||
+      raw > Number.MAX_SAFE_INTEGER
+    ) {
+      return undefined;
+    }
+    usage[field] = raw;
+  }
+  return Object.keys(usage).length > 0 ? usage : undefined;
+}
+
 export function parsePortResponse(raw: unknown): PortResponse {
   const payload = asRecord(raw, "port response");
   const type = knownType(payload["type"], PORT_RESPONSE_TYPES, "port response");
@@ -247,7 +286,13 @@ export function parsePortResponse(raw: unknown): PortResponse {
           text: typeof item["text"] === "string" ? item["text"] : "",
         };
       });
-      return { type, requestId: requireString(payload, "requestId", type), results: parsed };
+      const usage = parseUsageReport(payload["usage"]);
+      return {
+        type,
+        requestId: requireString(payload, "requestId", type),
+        results: parsed,
+        ...(usage ? { usage } : {}),
+      };
     }
     case "batchError": {
       const failedIndices = requireArray(payload, "failedIndices", type);

@@ -4,6 +4,7 @@ import {
   parseCommand,
   parsePortRequest,
   parsePortResponse,
+  parseUsageReport,
   type PortRequest,
 } from "../../src/shared/messages.js";
 
@@ -185,5 +186,56 @@ describe("command guard", () => {
         typography: { fontFamily: "Georgia", fontScale: 100, secret: "sk-live" },
       }),
     ).toThrowError(/secret/);
+  });
+});
+
+/** Feature 008: T4 — usage on the wire, and the credential key that must stay forbidden. */
+describe("usage on the wire", () => {
+  const result = {
+    type: "batchResult" as const,
+    requestId: "req-9",
+    results: [{ index: 0, text: "译文" }],
+  };
+
+  it("accepts a complete usage object and keeps every counter", () => {
+    const parsed = parsePortResponse({
+      ...result,
+      usage: {
+        promptTokens: 5_000,
+        completionTokens: 500,
+        totalTokens: 5_500,
+        cacheHitTokens: 4_000,
+        cacheMissTokens: 1_000,
+      },
+    });
+    expect(parsed.type).toBe("batchResult");
+    expect(parsed.type === "batchResult" ? parsed.usage?.totalTokens : undefined).toBe(5_500);
+  });
+
+  it("drops an invalid usage object while the batch result still resolves", () => {
+    const parsed = parsePortResponse({ ...result, usage: { promptTokens: -1 } });
+    expect(parsed.type).toBe("batchResult");
+    expect(parsed.type === "batchResult" ? parsed.usage : "unset").toBeUndefined();
+  });
+
+  it("resolves a batch result that carries no usage at all", () => {
+    const parsed = parsePortResponse(result);
+    expect(parsed.type === "batchResult" ? parsed.usage : "unset").toBeUndefined();
+  });
+
+  it("rejects an object with any invalid field, whole", () => {
+    expect(parseUsageReport({ promptTokens: 10, completionTokens: "5" })).toBeUndefined();
+    expect(parseUsageReport({ promptTokens: 10, completionTokens: 5.5 })).toBeUndefined();
+    expect(parseUsageReport({})).toBeUndefined();
+    expect(parseUsageReport("usage")).toBeUndefined();
+  });
+
+  it("never reads a key named token from a response, and still refuses one in a command", () => {
+    expect(parseUsageReport({ token: 55 })).toBeUndefined();
+    const parsed = parsePortResponse({ ...result, usage: { token: 55 } });
+    expect(parsed.type === "batchResult" ? parsed.usage : "unset").toBeUndefined();
+    expect(() => parseCommand({ type: "jobUpdated", status: {}, token: "sk-live" })).toThrowError(
+      /token/,
+    );
   });
 });

@@ -8,6 +8,7 @@ import {
   clearEgressLog,
   egressLog,
   parseBatchOutput,
+  parseUsage,
 } from "../../src/background/provider-client.js";
 import { startStubProvider, type StubProvider } from "../support/stub-provider.js";
 
@@ -189,5 +190,82 @@ describe("tolerant response parsing", () => {
     };
     expect(body.model).toBe("m-1");
     expect(body.temperature).toBe(0);
+  });
+});
+
+/** Feature 008: T2, T3 — the provider's usage, and every way it can be unusable. */
+describe("usage reading", () => {
+  it("reads DeepSeek's five counters through a real HTTP response", async () => {
+    stub.setMode("success", { usage: "deepseek" });
+    const outcome = await callProvider({ ...base, provider: provider(), segments: ["Hello"] });
+    expect(outcome.usage).toEqual({
+      promptTokens: 5_000,
+      completionTokens: 500,
+      totalTokens: 5_500,
+      cacheHitTokens: 4_000,
+      cacheMissTokens: 1_000,
+    });
+  });
+
+  it("derives the split from prompt_tokens_details.cached_tokens when that is all there is", async () => {
+    stub.setMode("success", { usage: "openaiDetails" });
+    const outcome = await callProvider({ ...base, provider: provider(), segments: ["Hello"] });
+    expect(outcome.usage?.cacheHitTokens).toBe(4_000);
+    expect(outcome.usage?.cacheMissTokens).toBe(1_000);
+  });
+
+  it("leaves usage absent when the provider says nothing", async () => {
+    stub.setMode("success", { usage: "none" });
+    const outcome = await callProvider({ ...base, provider: provider(), segments: ["Hello"] });
+    expect(outcome.usage).toBeUndefined();
+    expect(outcome.results.length).toBe(1);
+  });
+
+  it("treats garbage as absent, never as a number", async () => {
+    stub.setMode("success", { usage: "garbage" });
+    const outcome = await callProvider({ ...base, provider: provider(), segments: ["Hello"] });
+    expect(outcome.usage).toBeUndefined();
+  });
+
+  it("keeps a total-only report with the split unknown", async () => {
+    stub.setMode("success", { usage: "totalOnly" });
+    const outcome = await callProvider({ ...base, provider: provider(), segments: ["Hello"] });
+    expect(outcome.usage).toEqual({ totalTokens: 5_500 });
+  });
+
+  it("clamps a hit count above the prompt and keeps the provider's own total", () => {
+    expect(
+      parseUsage({
+        usage: {
+          prompt_tokens: 40,
+          completion_tokens: 10,
+          total_tokens: 999,
+          prompt_cache_hit_tokens: 100,
+        },
+      }),
+    ).toEqual({
+      promptTokens: 40,
+      completionTokens: 10,
+      totalTokens: 999,
+      cacheHitTokens: 100,
+      cacheMissTokens: 0,
+    });
+  });
+
+  it("refuses a report whose numbers are not finite non-negative integers", () => {
+    expect(parseUsage({ usage: { prompt_tokens: "12", completion_tokens: 3 } })).toBeUndefined();
+    expect(parseUsage({ usage: { prompt_tokens: 12, completion_tokens: -1 } })).toBeUndefined();
+    expect(parseUsage({ usage: { prompt_tokens: 1.5, completion_tokens: 2 } })).toBeUndefined();
+    expect(parseUsage({})).toBeUndefined();
+    expect(parseUsage(null)).toBeUndefined();
+  });
+
+  it("gives each response its own usage, so a discarded attempt cannot merge into the next", async () => {
+    stub.setMode("success", { usage: "deepseek" });
+    const first = await callProvider({ ...base, provider: provider(), segments: ["A"] });
+    const second = await callProvider({ ...base, provider: provider(), segments: ["B"] });
+    expect(first.usage?.totalTokens).toBe(5_500);
+    expect(second.usage?.totalTokens).toBe(5_500);
+    expect(stub.requests.length).toBe(2);
   });
 });

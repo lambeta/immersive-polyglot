@@ -69,7 +69,11 @@ class TranslatePort implements BatchCaller {
     if (pending.abortListener) pending.signal?.removeEventListener("abort", pending.abortListener);
 
     if (response.type === "batchResult") {
-      pending.resolve({ results: response.results, failedIndices: [] });
+      pending.resolve({
+        results: response.results,
+        failedIndices: [],
+        ...(response.usage ? { usage: response.usage } : {}),
+      });
       return;
     }
     if (response.type === "batchError") {
@@ -468,7 +472,19 @@ function restore(): void {
   // (data-model I4).
   slot.reset();
   claimedTarget = null;
-  broadcast({ ...lastStatus, jobId: null, state: "idle", failure: undefined });
+  // Feature 008 FR-019: the run's record, spend included, belongs to the run. A restored page has
+  // none of it, so the idle status carries no counts, no provider and no usage forward.
+  broadcast({
+    ...lastStatus,
+    jobId: null,
+    providerId: null,
+    state: "idle",
+    counts: { total: 0, translated: 0, failed: 0, skipped: 0, reused: 0 },
+    capReached: false,
+    skipped: 0,
+    failure: undefined,
+    usage: undefined,
+  });
 }
 
 /**

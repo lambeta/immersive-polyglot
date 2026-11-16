@@ -151,9 +151,12 @@ conflict named, rather than resolved arbitrarily at request time (FR-030).
 | `approxChars` | Volume this session | Increments on dispatch |
 | `perProvider` | Breakdown by provider ID | Keyed map |
 | `reusedSegments` | Savings from dedupe | Surfaces FR-011's "reuse saved work" message |
+| `spend` | Tokens the provider reported, and the list-price estimate (feature 008) | Absent, never zero, when no response reported usage |
 
 **Invariant**: the record is session-scoped and cleared with the tab; it is never transmitted, and it
-is not a billing ledger — it is a cost-visibility aid (FR-028).
+is not a billing ledger — it is a cost-visibility aid (FR-028). Amended by feature 008: the optional
+`spend` member repeats the provider's own counters and, for a provider whose published prices ship with
+the product, one labelled list-price estimate with its basis.
 
 ---
 

@@ -271,8 +271,12 @@ instruction visibly affects output; then translate a text selection only.
   segments translated and characters sent — so cost is not invisible.
 - **FR-029**: Users MUST be able to cap translation volume per site or per session, expressed in
   segments and characters, and the product MUST stop dispatching at the cap with an explanation rather
-  than exceeding it. The product MUST NOT display or promise a monetary cost figure, because it holds no
-  pricing information; cost stays a judgement the user makes from the recorded volume (FR-028).
+  than exceeding it. The product MUST NOT invent or promise a monetary cost figure: it holds no pricing
+  information of its own. _Amended by feature 008 (2026-11-16):_ for a provider whose published prices
+  ship with the product, it MAY show a **list-price estimate** — always labelled as an estimate, always
+  with the provider and the date of the price snapshot beside it — and it MUST show nothing at all for
+  any provider it has no published price for. Cost otherwise remains a judgement the user makes from
+  the recorded volume (FR-028).
 
 **Personalization**
 

@@ -93,11 +93,21 @@ const server = createServer(async (request, response) => {
     }
 
     console.log(`  translated ${segments.length} segment(s) — first: ${JSON.stringify(segments[0] ?? "").slice(0, 60)}`);
+    // Feature 008: DeepSeek-shaped usage, so the panel's spend row is visible without a key. The
+    // host is not DeepSeek's, so the price stays absent and the muted note says why.
+    const usage = {
+      prompt_tokens: 5_000,
+      completion_tokens: 500,
+      total_tokens: 5_500,
+      prompt_cache_hit_tokens: 4_000,
+      prompt_cache_miss_tokens: 1_000,
+    };
     response
       .writeHead(200, { "content-type": "application/json" })
       .end(
         JSON.stringify({
           choices: [{ message: { role: "assistant", content: JSON.stringify(segments.map(translate)) } }],
+          usage,
         }),
       );
     return;

@@ -5,6 +5,7 @@ import { matchSite } from "../../shared/routing.js";
 import { displayStyleById, resolveDisplayStyleForHost } from "../../shared/display-styles.js";
 import { StylePicker } from "../shared/style-picker.js";
 import { previewIcon } from "../shared/style-preview.js";
+import { renderSpendRow } from "./spend-row.js";
 import type { DisplayMode, DisplayStyleId, Settings } from "../../shared/types.js";
 import type { CommandMessage, JobStatusPayload } from "../../shared/messages.js";
 
@@ -189,6 +190,8 @@ function render(): void {
   if (record) {
     usage.append(el("li", { text: t("popupUsageSegments", { count: record.segmentsTranslated }) }));
     usage.append(el("li", { text: t("popupUsageCharacters", { count: record.approxChars }) }));
+    // Feature 008 FR-027: tokens and price join the record on one row, after characters.
+    for (const item of renderSpendRow(document, record.spend)) usage.append(item);
     if (record.reusedSegments > 0) {
       usage.append(el("li", { text: t("popupUsageReused", { count: record.reusedSegments }) }));
     }

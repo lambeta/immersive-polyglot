@@ -191,11 +191,52 @@ export interface GlossaryEntry {
   caseSensitive: boolean;
 }
 
+/** What one provider response says it consumed (feature 008, data-model §1). */
+export interface UsageReport {
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  cacheHitTokens?: number;
+  cacheMissTokens?: number;
+}
+
+/** The parts the price is computed from, per tier (feature 008, data-model §2). */
+export interface TokenParts {
+  hit: number;
+  miss: number;
+  out: number;
+}
+
+export type Currency = "CNY" | "USD";
+
+/** Why a run cannot be priced (feature 008, data-model §5). One reason, in this precedence. */
+export type SpendUnavailable = "noPriceList" | "modelNotPriced" | "usageIncomplete";
+
+export interface SpendPrice {
+  amount: number;
+  currency: Currency;
+  /** The snapshot's month, e.g. "2026-11"; shown beside the amount (FR-009, FR-025). */
+  snapshot: string;
+  /** The provider whose published list was used, e.g. "DeepSeek". */
+  provider: string;
+}
+
+/** The run's measured spend and its estimate (feature 008, data-model §6). */
+export interface SpendRecord {
+  tokens: { total: number; prompt: number; completion: number; hit: number; miss: number };
+  price: SpendPrice | null;
+  unavailable?: SpendUnavailable;
+  /** The model the run used, so an unpriced model can be named in the note (FR-026). */
+  model?: string;
+}
+
 export interface SessionUsageRecord {
   segmentsTranslated: number;
   approxChars: number;
   perProvider: Record<ProviderId, number>;
   reusedSegments: number;
+  /** Absent — never zero — when no response reported usage (FR-004). */
+  spend?: SpendRecord;
 }
 
 export interface StyleSettings {

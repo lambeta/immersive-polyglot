@@ -10,7 +10,8 @@
  *   printf 'DEEPSEEK_API_KEY=sk-...\n' > .env.local     # git-ignored
  *   npm run verify:real-provider
  *
- * Optional: DEEPSEEK_MODEL (default deepseek-chat), DEEPSEEK_ENDPOINT.
+ * Optional: DEEPSEEK_MODEL (default deepseek-flash — a name the provider and the shipped price
+ * catalogue both know), DEEPSEEK_ENDPOINT.
  */
 import { chromium } from "@playwright/test";
 import { createServer } from "node:http";
@@ -24,7 +25,7 @@ const DIST = join(ROOT, "dist");
 const PAGES = join(ROOT, "tests/fixtures/pages");
 const PAGE = process.env.REAL_PAGE ?? "blog-short.html";
 const ENDPOINT = process.env.DEEPSEEK_ENDPOINT ?? "https://api.deepseek.com/chat/completions";
-const MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-chat";
+const MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-flash";
 
 function readKey() {
   if (process.env.DEEPSEEK_API_KEY) return process.env.DEEPSEEK_API_KEY.trim();
@@ -167,6 +168,15 @@ try {
     };
   });
 
+  // Feature 008: the same status the panel reads, printed with its basis and never the key.
+  const spend = await worker.evaluate(async (url) => {
+    const tabs = await chrome.tabs.query({});
+    const tab = tabs.find((candidate) => candidate.url?.startsWith(url));
+    if (!tab?.id) return null;
+    const status = await chrome.tabs.sendMessage(tab.id, { type: "getJobStatus" });
+    return status?.usage?.spend ?? null;
+  }, pageUrl);
+
   const restored = await (async () => {
     await worker.evaluate(
       async (url) => {
@@ -182,8 +192,19 @@ try {
     return true;
   })();
 
+  const spendKnown = Boolean(spend && spend.tokens.total > 0);
+  const priceShown = Boolean(spend?.price);
+  const priceLine = spend?.price
+    ? "≈ " + (spend.price.currency === "CNY" ? "¥" : "$") + spend.price.amount.toFixed(6) +
+      "  (" + spend.price.provider + " list · " + spend.price.snapshot + ")"
+    : spend
+      ? "no price: " + (spend.unavailable ?? "unknown reason")
+      : "no usage reported";
+
   const checks = [
     ["endpoint reached over real HTTPS", result.count > 0],
+    ["the provider reported usage", spendKnown],
+    ["the reported usage prices under the shipped catalogue", priceShown],
     ["translations are non-empty", result.texts.every((text) => text.length > 0)],
     ["no stub marker in the output", !result.placeholder],
     ["target language announced", result.lang === "zh"],
@@ -192,6 +213,7 @@ try {
 
   console.log("real provider: " + MODEL + " @ " + new URL(ENDPOINT).host + "  page: " + PAGE);
   console.log("segments translated: " + result.count + "   first response: " + elapsedMs + " ms");
+  console.log("tokens spent: " + (spend ? spend.tokens.total : 0) + "   price: " + priceLine);
   for (const [index, text] of result.texts.slice(0, 3).entries()) {
     console.log("  [" + index + "] " + text.slice(0, 120).replace(/\s+/g, " "));
   }

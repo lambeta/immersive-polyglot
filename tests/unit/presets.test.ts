@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEEPSEEK_PRESET } from "../../src/ui/options/presets.js";
+import { PRICE_SNAPSHOT } from "../../src/shared/price-catalog.js";
+import { resolveModel } from "../../src/shared/pricing.js";
 import { validateEndpoint, validateProvider } from "../../src/shared/validation.js";
 
 /**
@@ -41,5 +43,11 @@ describe("DeepSeek preset", () => {
 
   it("never carries a credential", () => {
     expect(Object.keys(DEEPSEEK_PRESET.draft).sort()).toEqual(["endpoint", "model", "name"]);
+  });
+
+  it("prefills a model the shipped catalogue prices, and prices the legacy names too", () => {
+    expect(resolveModel(DEEPSEEK_PRESET.draft.model, PRICE_SNAPSHOT)).not.toBeNull();
+    // A profile configured before the preset changed still says deepseek-chat; it must be priced.
+    expect(resolveModel("deepseek-chat", PRICE_SNAPSHOT)).not.toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import { Renderer } from "./renderer.js";
 import { Journal, restorePage } from "./restorer.js";
 import type { PageObserver } from "./observer.js";
 import type { VolumeBudget, RequestLimiter } from "./limiter.js";
+import { classifyTier, estimateSpend } from "../shared/pricing.js";
 import type {
   DisplayMode,
   DisplayStyleId,
@@ -12,9 +13,13 @@ import type {
   JobCounts,
   JobState,
   ProviderErrorClass,
+  SessionUsageRecord,
   Settings,
+  SpendRecord,
+  TokenParts,
   TranslationTypography,
   TranslationUnit,
+  UsageReport,
 } from "../shared/types.js";
 import type { JobStatusPayload } from "../shared/messages.js";
 
@@ -41,6 +46,8 @@ export interface BatchReply {
   failedIndices: number[];
   errorClass?: ErrorClass;
   message?: string;
+  /** Feature 008: what the provider reported for this response, when it reported anything. */
+  usage?: UsageReport;
 }
 
 export interface BatchCaller {
@@ -110,10 +117,30 @@ export class TranslationJob {
   #sourceLang: string;
   #jobId = `job_${Date.now().toString(36)}`;
   #charsSent = 0;
+  /**
+   * Feature 008 (R5): what this run has actually been told it consumed, per tier. It is reported,
+   * never invented, and it is cleared only when translation is turned off (R11).
+   */
+  #spendProvider: { endpoint: string; model: string } | null = null;
+  #spendRecorded = false;
+  #spendIncomplete = false;
+  #spendTotal = 0;
+  #spendPrompt = 0;
+  #spendCompletion = 0;
+  #spendHit = 0;
+  #spendMiss = 0;
+  #spendPeak: TokenParts = { hit: 0, miss: 0, out: 0 };
+  #spendOffPeak: TokenParts = { hit: 0, miss: 0, out: 0 };
 
   constructor(options: JobOptions) {
     this.#options = options;
     this.#sourceLang = options.sourceLang;
+    const provider = options.settings.providers.find(
+      (candidate) => candidate.id === options.providerId,
+    );
+    this.#spendProvider = provider
+      ? { endpoint: provider.endpoint, model: provider.model }
+      : null;
     this.#renderer = new Renderer(this.#journal, {
       displayMode: options.displayMode,
       displayStyle: options.displayStyle,
@@ -303,11 +330,13 @@ export class TranslationJob {
         timeoutMs: provider.timeoutMs,
       };
       const call = () => this.#options.caller.translate(payload, controller.signal);
+      // The tier is the one in effect when the request was made, not when the answer arrived.
+      const requestedAt = Date.now();
       // The limiter is the concurrency ceiling; cancellation still flows through the job's own
       // controller, so a cancelled job aborts its in-flight calls even when queued.
       const reply = this.#options.limiter ? await this.#options.limiter.run(call) : await call();
 
-      this.#applyReply(dispatchable, reply);
+      this.#applyReply(dispatchable, reply, requestedAt);
     } catch (error) {
       if (this.#cancelled) {
         for (const unit of dispatchable) {
@@ -324,10 +353,15 @@ export class TranslationJob {
     }
   }
 
-  #applyReply(batchUnits: TranslationUnit[], reply: BatchReply): void {
+  #applyReply(
+    batchUnits: TranslationUnit[],
+    reply: BatchReply,
+    requestedAt: number = Date.now(),
+  ): void {
     // FR-011/FR-012: a cancelled or restored run discards late results instead of rendering them
     // into a page that has already been put back (research R6).
     if (this.#cancelled) return;
+    let delivered = 0;
     const failed = new Set(reply.failedIndices);
     for (const result of reply.results) {
       const unit = batchUnits[result.index];
@@ -339,6 +373,7 @@ export class TranslationJob {
       }
       unit.translatedText = text;
       unit.state = "translated";
+      delivered += 1;
       this.#render(unit);
       this.#renderDuplicates(unit);
     }
@@ -349,6 +384,9 @@ export class TranslationJob {
       }
       this.#markUnitFailed(unit, (reply.errorClass as ProviderErrorClass) ?? "malformedResponse");
     }
+
+    // FR-002: a response counts once, and only when it put something on the page.
+    if (delivered > 0 && reply.usage) this.#recordUsage(reply.usage, requestedAt);
 
     if (reply.errorClass) {
       this.#fail(reply.errorClass, FAILURE_MESSAGES[reply.errorClass] ?? "Translation failed.");
@@ -528,6 +566,8 @@ export class TranslationJob {
     // Restoring is terminal for the run: without this, a batch already in flight would render into a
     // page that has just been put back (FR-011; research R6).
     this.cancel();
+    // R11: only turning translation off clears the record; a bare cancel keeps it.
+    this.#clearSpend();
     const scrollY = this.#options.view?.scrollY ?? 0;
     const result = restorePage(this.#journal, {
       document: this.#options.document,
@@ -550,20 +590,88 @@ export class TranslationJob {
     this.#renderer.setTypography(typography);
   }
 
-  /** Cost visibility (FR-028): what this session has actually sent, never a money figure (FR-029). */
-  usage(): {
-    segmentsTranslated: number;
-    approxChars: number;
-    reusedSegments: number;
-    perProvider: Record<string, number>;
-  } {
+  /**
+   * Cost visibility (FR-001, FR-014): what this session has actually sent and, when the provider
+   * reported usage, what it consumed and what that costs at its published prices.
+   */
+  usage(): SessionUsageRecord {
     const counts = this.counts;
+    const spend = this.#spendRecord();
     return {
       segmentsTranslated: counts.translated,
       approxChars: this.#charsSent,
       reusedSegments: this.#occurrenceCount(),
       perProvider: { [this.#options.providerId]: counts.translated },
+      ...(spend ? { spend } : {}),
     };
+  }
+
+  /** R11/R12: measured consumption, reported only while its translations are still on the page. */
+  #spendRecord(): SpendRecord | undefined {
+    if (!this.#spendRecorded) return undefined;
+    const stillShown = this.#units.some(
+      (unit) => unit.state === "translated" && unit.domRef?.isConnected === true,
+    );
+    if (!stillShown) return undefined;
+
+    const tokens = {
+      total: this.#spendTotal,
+      prompt: this.#spendPrompt,
+      completion: this.#spendCompletion,
+      hit: this.#spendHit,
+      miss: this.#spendMiss,
+    };
+    const provider = this.#spendProvider;
+    if (!provider) return { tokens, price: null, unavailable: "noPriceList" };
+    const named = { tokens, model: provider.model };
+
+    const estimate = estimateSpend({
+      endpoint: provider.endpoint,
+      model: provider.model,
+      targetLang: this.#options.targetLang,
+      total: this.#spendTotal,
+      peak: this.#spendPeak,
+      offPeak: this.#spendOffPeak,
+      usageIncomplete: this.#spendIncomplete,
+    });
+    return "unavailable" in estimate
+      ? { ...named, price: null, unavailable: estimate.unavailable }
+      : { ...named, price: estimate };
+  }
+
+  #recordUsage(usage: UsageReport, requestedAt: number): void {
+    const prompt = usage.promptTokens;
+    const completion = usage.completionTokens;
+    const total = usage.totalTokens ?? (prompt ?? 0) + (completion ?? 0);
+    const hit = usage.cacheHitTokens ?? 0;
+    const miss = usage.cacheMissTokens ?? prompt ?? 0;
+    const out = completion ?? 0;
+
+    if (prompt === undefined || completion === undefined) this.#spendIncomplete = true;
+
+    this.#spendTotal += total;
+    this.#spendPrompt += prompt ?? 0;
+    this.#spendCompletion += completion ?? 0;
+    this.#spendHit += hit;
+    this.#spendMiss += miss;
+    this.#spendRecorded = true;
+
+    const bucket = classifyTier(requestedAt) === "peak" ? this.#spendPeak : this.#spendOffPeak;
+    bucket.hit += hit;
+    bucket.miss += miss;
+    bucket.out += out;
+  }
+
+  #clearSpend(): void {
+    this.#spendRecorded = false;
+    this.#spendIncomplete = false;
+    this.#spendTotal = 0;
+    this.#spendPrompt = 0;
+    this.#spendCompletion = 0;
+    this.#spendHit = 0;
+    this.#spendMiss = 0;
+    this.#spendPeak = { hit: 0, miss: 0, out: 0 };
+    this.#spendOffPeak = { hit: 0, miss: 0, out: 0 };
   }
 
   result(): JobResult {

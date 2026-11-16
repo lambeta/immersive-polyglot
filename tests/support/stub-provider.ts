@@ -36,6 +36,8 @@ export interface StubRequest {
   at: number;
 }
 
+export type StubUsage = "none" | "deepseek" | "openaiDetails" | "garbage" | "totalOnly";
+
 export interface StubOptions {
   mode?: StubMode;
   /** Number of leading requests that answer with the failure mode before succeeding. */
@@ -46,6 +48,8 @@ export interface StubOptions {
   translate?: (text: string, index: number) => string;
   /** Directory whose files are served under /pages/. */
   staticDir?: string;
+  /** Feature 008: what the success responses say they consumed. */
+  usage?: StubUsage;
 }
 
 export interface StubProvider {
@@ -57,7 +61,7 @@ export interface StubProvider {
    * page looks like: a test asks "which passages were sent?", not "how many requests were made?".
    */
   requestedSegments(): string[];
-  setMode(mode: StubMode, options?: { failFirst?: number; latencyMs?: number }): void;
+  setMode(mode: StubMode, options?: { failFirst?: number; latencyMs?: number; usage?: StubUsage }): void;
   reset(): void;
   close(): Promise<void>;
 }
@@ -103,6 +107,7 @@ export async function startStubProvider(options: StubOptions = {}): Promise<Stub
   let mode: StubMode = options.mode ?? "success";
   let failFirst = options.failFirst ?? 0;
   let latencyMs = options.latencyMs ?? 0;
+  let usageMode: StubUsage = options.usage ?? "none";
   let served = 0;
   const requests: StubRequest[] = [];
   const translate = options.translate ?? ((text: string) => defaultTranslate(text));
@@ -174,8 +179,43 @@ export async function startStubProvider(options: StubOptions = {}): Promise<Stub
         .writeHead(status, { "content-type": "application/json", ...headers })
         .end(JSON.stringify(payload));
     };
+    // Feature 008: the worked example (prompt 5000, of which 4000 cached, completion 500) so the
+    // panel's figures are arithmetic a reviewer can check by hand.
+    const usagePayload = (): Record<string, unknown> => {
+      switch (usageMode) {
+        case "deepseek":
+          return {
+            usage: {
+              prompt_tokens: 5_000,
+              completion_tokens: 500,
+              total_tokens: 5_500,
+              prompt_cache_hit_tokens: 4_000,
+              prompt_cache_miss_tokens: 1_000,
+            },
+          };
+        case "openaiDetails":
+          return {
+            usage: {
+              prompt_tokens: 5_000,
+              completion_tokens: 500,
+              total_tokens: 5_500,
+              prompt_tokens_details: { cached_tokens: 4_000 },
+            },
+          };
+        case "totalOnly":
+          return { usage: { total_tokens: 5_500 } };
+        case "garbage":
+          return { usage: { prompt_tokens: "twelve", completion_tokens: -1 } };
+        case "none":
+        default:
+          return {};
+      }
+    };
     const completion = (content: string) =>
-      json(200, { choices: [{ message: { role: "assistant", content } }] });
+      json(200, {
+        choices: [{ message: { role: "assistant", content } }],
+        ...usagePayload(),
+      });
 
     switch (activeMode) {
       case "authRejected":
@@ -240,12 +280,14 @@ export async function startStubProvider(options: StubOptions = {}): Promise<Stub
       mode = nextMode;
       if (nextOptions.failFirst !== undefined) failFirst = nextOptions.failFirst;
       if (nextOptions.latencyMs !== undefined) latencyMs = nextOptions.latencyMs;
+      if (nextOptions.usage !== undefined) usageMode = nextOptions.usage;
     },
     reset() {
       requests.length = 0;
       served = 0;
       failFirst = 0;
       latencyMs = 0;
+      usageMode = options.usage ?? "none";
       mode = options.mode ?? "success";
     },
     close() {

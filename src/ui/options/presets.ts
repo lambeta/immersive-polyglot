@@ -21,6 +21,8 @@ export const DEEPSEEK_PRESET: ProviderPreset = {
     name: "DeepSeek",
     // OpenAI-compatible chat completions; the base URL alone is not the request endpoint.
     endpoint: "https://api.deepseek.com/chat/completions",
-    model: "deepseek-chat",
+    // Feature 008 R9: pre-fill the model the provider currently publishes and the catalogue prices.
+    // Older profiles that still say `deepseek-chat` are priced too (the catalogue aliases it).
+    model: "deepseek-flash",
   },
 };
