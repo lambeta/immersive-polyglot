@@ -122,6 +122,45 @@ export async function expectNoResidue(page: Page): Promise<void> {
   await expect(page.locator("[data-ipt]")).toHaveCount(0);
 }
 
+/** How many progress marks the page is showing right now (feature 007). */
+export async function pendingMarks(page: Page): Promise<number> {
+  return page.locator('[data-ipt="pending"]').count();
+}
+
+/** Waits for at least one mark; used where a slow provider keeps marks on screen. */
+export async function waitForMarks(page: Page, minimum = 1): Promise<void> {
+  await page.waitForFunction(
+    (count) => document.querySelectorAll('[data-ipt="pending"]').length >= count,
+    minimum,
+    { timeout: 30_000 },
+  );
+}
+
+/** What turning translation off must restore exactly: the page's own markup and the reader's place. */
+export async function pageSnapshot(page: Page): Promise<{ html: string; scrollY: number }> {
+  return page.evaluate(() => ({ html: document.body.innerHTML, scrollY: Math.round(window.scrollY) }));
+}
+
+/** The passage tokens ("P001") of the paragraphs the reader can see right now. */
+export async function visiblePassages(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const height = window.innerHeight;
+    return Array.from(document.querySelectorAll("p.passage"))
+      .filter((paragraph) => {
+        const rect = paragraph.getBoundingClientRect();
+        return rect.bottom > 0 && rect.top < height;
+      })
+      .map((paragraph) => (paragraph.textContent ?? "").slice(0, 4));
+  });
+}
+
+/** Passage tokens the provider was actually asked to translate, in arrival order. */
+export function requestedPassages(segments: readonly string[]): string[] {
+  return segments
+    .map((segment) => /^P\d{3}/u.exec(segment)?.[0])
+    .filter((token): token is string => token !== undefined);
+}
+
 /** Waits until the content script has announced itself on the page. */
 export async function waitForContentScript(page: Page): Promise<void> {
   await page.waitForFunction(() => document.documentElement.dataset["iptReady"] === "1", undefined, {

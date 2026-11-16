@@ -171,7 +171,10 @@ test("late long content renders complete exactly once", async () => {
     document.querySelector("main")?.appendChild(paragraph);
   }, lateText);
 
-  await expect.poll(async () => page.locator('[data-ipt="target"]').count(), { timeout: 20_000 }).toBe(before + 1);
+  // Feature 007 (FR-018): arriving is not a reason to pay for a translation — the demand window it
+  // enters is. The reader scrolls to the new passage, and only then is it requested.
+  await page.evaluate(() => document.querySelector("#late-arrival")?.scrollIntoView({ block: "center" }));
+  await expect.poll(async () => page.locator('[data-ipt="target"]').count(), { timeout: 30_000 }).toBe(before + 1);
   const late = await page.evaluate(() => {
     const source = document.querySelector("#late-arrival") as HTMLElement | null;
     return {

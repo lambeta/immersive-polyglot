@@ -12,6 +12,9 @@ import { resolveTypography } from "../shared/settings.js";
 import type { DisplayMode, DisplayStyleId, ErrorClass, Settings } from "../shared/types.js";
 import { RequestLimiter, VolumeBudget } from "./limiter.js";
 import { PageObserver } from "./observer.js";
+import { PageRun } from "./page-run.js";
+import { ScrollAnchor } from "./scroll-anchor.js";
+import { ViewportWatcher } from "./viewport.js";
 import { TranslationJob, type BatchCaller, type BatchReply, type BatchRequestPayload, type JobResult } from "./job.js";
 import { RunSlot, sameTarget, type RunOutcome, type RunTarget } from "./run-slot.js";
 import { selectedBlocks } from "./selection.js";
@@ -168,6 +171,10 @@ class TranslatePort implements BatchCaller {
 
 const portClient = new TranslatePort();
 
+/** The block elements the segmenter can turn into passages; observed so scrolling reports cheaply. */
+const PASSAGE_SELECTOR =
+  "p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, dd, dt, figcaption, caption, summary";
+
 const RESTRICTED_SCHEMES = new Set([
   "chrome:",
   "chrome-extension:",
@@ -218,6 +225,9 @@ function matches(pattern: string, host: string): boolean {
 
 let job: TranslationJob | null = null;
 let observer: PageObserver | null = null;
+/** The open page run (feature 007): rounds driven by the reader's demand window. */
+let pageRun: PageRun | null = null;
+let watcher: ViewportWatcher | null = null;
 /** The page's single run slot: at most one run, however often the reader activates (data-model §1). */
 const slot = new RunSlot();
 /** What the current — or last finished — run was claimed for; supplies `sameTarget` (data-model §2). */
@@ -277,6 +287,10 @@ function activate(
   if (decision === "replace") {
     // At most one journal has ever written to this page: discard the previous run's output first,
     // so the page never holds output from two runs (FR-008; research R5).
+    watcher?.stop();
+    watcher = null;
+    pageRun?.stop();
+    pageRun = null;
     if (job) {
       job.cancel();
       job.restore();
@@ -334,6 +348,9 @@ async function runTranslation(
     return;
   }
 
+  // FR-027: the guard pins the reader's place around every mutation that can change page height.
+  const anchor = new ScrollAnchor({ view: window });
+
   const budget = new VolumeBudget({
     sessionCapSegments: current.limits.sessionCapSegments,
     sessionCapChars: current.limits.sessionCapChars,
@@ -357,32 +374,76 @@ async function runTranslation(
       broadcast({ ...status, brokenRules: decision.brokenRules });
     },
     view: window,
+    beforeMutation: () => anchor.capture(),
+    afterMutation: () => anchor.restore(),
   });
   job = runJob;
   slot.markRunning();
+
+  // A page run needs the whole document segmented so the demand window can filter it. A selection
+  // is its own scope: collecting the page there would translate everything, not the selection.
+  if (requested.kind === "page") runJob.collect();
 
   startObserver();
 
   let outcome: RunOutcome = "failed";
   try {
-    const result: JobResult =
-      requested.kind === "selection" && options.elements && options.elements.length > 0
-        ? await runJob.translateElements(options.elements)
-        : await runJob.run();
-    outcome = result.state === "cancelled" ? "cancelled" : result.failure ? "failed" : "completed";
+    if (requested.kind === "selection" && options.elements && options.elements.length > 0) {
+      // A selection is an explicit target: it is its own window, whatever its visibility (FR-035).
+      const result: JobResult = await runJob.translateElements(options.elements);
+      outcome = result.state === "cancelled" ? "cancelled" : result.failure ? "failed" : "completed";
+    } else {
+      // A page run stays open: this resolves when the demand the reader has reached is drained.
+      const run = new PageRun({
+        job: runJob,
+        document,
+        view: window,
+        ceiling: provider.maxConcurrency,
+        pageVisible: () => watcher?.pageVisible() ?? true,
+      });
+      pageRun = run;
+      const viewportWatcher = new ViewportWatcher({
+        document,
+        view: window,
+        onChange: () => {
+          // The round defers itself while the page is hidden (FR-016) and runs when it returns.
+          if (pageRun === run && !run.stopped) void run.round();
+        },
+        lookaheadPx: () => window.innerHeight,
+      });
+      watcher = viewportWatcher;
+      viewportWatcher.start();
+      await run.start();
+      if (runJob.state === "cancelled") outcome = "cancelled";
+      else outcome = runJob.result().failure ? "failed" : "completed";
+      viewportWatcher.observe(Array.from(document.querySelectorAll(PASSAGE_SELECTOR)));
+    }
   } finally {
     slot.settle(outcome);
   }
 }
 
+/**
+ * Late content (FR-018): arriving is not a reason to pay for a translation. New passages are
+ * collected, and the demand window decides — on screen means now, further down means when the
+ * reader gets there.
+ */
 function startObserver(): void {
   observer?.stop();
   observer = new PageObserver({
     root: document.body,
     onNewContent: (elements: Element[]) => {
       if (!job) return;
-      if (job.state === "idle" || job.state === "cancelled") return;
-      void job.translateElements(elements);
+      if (job.state === "cancelled") return;
+      const run = pageRun;
+      if (!run || run.stopped) {
+        // No open page run (a selection was translated): keep the old whole-target behaviour.
+        void job.translateElements(elements);
+        return;
+      }
+      for (const element of elements) job.collect(element);
+      watcher?.observe(elements);
+      void run.round();
     },
   });
   observer.start();
@@ -391,6 +452,10 @@ function startObserver(): void {
 function restore(): void {
   observer?.stop();
   observer = null;
+  watcher?.stop();
+  watcher = null;
+  pageRun?.stop();
+  pageRun = null;
   if (job) {
     // Stop the run before replaying: a reply still on the wire must not render into a restored page
     // (FR-011). The journal is the only restoration mechanism (FR-010).
@@ -446,6 +511,8 @@ function handleCommand(command: CommandMessage, sendResponse: (reply: unknown) =
       return;
     }
     case "cancelJob":
+      // FR-024: stopping drops queued rounds and removes every mark; rendered text stays restorable.
+      pageRun?.stop();
       job?.cancel();
       portClient.cancelPending();
       sendResponse({ ok: true });

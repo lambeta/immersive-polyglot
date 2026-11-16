@@ -22,10 +22,10 @@ import type { DisplayMode, DisplayStyleId, TranslationTypography } from "../shar
  * (research R2).
  */
 
-import { SOURCE_MARKER, TARGET_MARKER } from "./markers.js";
+import { PENDING_MARKER, SOURCE_MARKER, TARGET_MARKER } from "./markers.js";
 
 // Re-exported so every existing import path keeps working; markers.ts is the single definition.
-export { SOURCE_MARKER, TARGET_MARKER } from "./markers.js";
+export { PENDING_MARKER, SOURCE_MARKER, TARGET_MARKER } from "./markers.js";
 
 const INHERITED_PROPERTIES = [
   "font-size",
@@ -55,6 +55,16 @@ interface RenderedRecord {
   baseLineHeight: string;
 }
 
+/**
+ * A passage whose translation is on its way (feature 007). The container is the node the translation
+ * will use: it is created once, journalled once, and converted in place when the text arrives.
+ */
+interface PendingRecord {
+  container: HTMLElement;
+  source: Element;
+  unitId: string;
+}
+
 export interface RenderOptions {
   displayMode: DisplayMode;
   targetLang: string;
@@ -64,6 +74,13 @@ export interface RenderOptions {
   typography?: TranslationTypography;
   /** Injected for tests; defaults to the element's own window. */
   view?: Window | null;
+  /**
+   * Feature 007 FR-027: called immediately before and after a mutation that can change the page's
+   * height. The pair runs inside one synchronous task, so the reader cannot scroll between them —
+   * which is what lets the caller measure the shift that this mutation alone caused.
+   */
+  beforeMutation?(): void;
+  afterMutation?(): void;
 }
 
 export class Renderer {
@@ -74,6 +91,9 @@ export class Renderer {
   #style: DisplayStyleId;
   #typography: TranslationTypography;
   readonly #rendered = new Map<Element, RenderedRecord>();
+  readonly #pending = new Map<Element, PendingRecord>();
+  readonly #beforeMutation: (() => void) | undefined;
+  readonly #afterMutation: (() => void) | undefined;
 
   constructor(journal: Journal, options: RenderOptions) {
     this.#journal = journal;
@@ -82,6 +102,8 @@ export class Renderer {
     this.#targetLang = options.targetLang;
     this.#style = resolveDisplayStyle(options.displayStyle);
     this.#typography = sanitiseTypography(options.typography ?? {});
+    this.#beforeMutation = options.beforeMutation;
+    this.#afterMutation = options.afterMutation;
   }
 
   get displayStyle(): DisplayStyleId {
@@ -102,6 +124,68 @@ export class Renderer {
 
   count(): number {
     return this.#rendered.size;
+  }
+
+  /** How many passages are showing a progress mark right now. Never part of the translated count. */
+  get pendingCount(): number {
+    return this.#pending.size;
+  }
+
+  /** The mark element for a passage, if it has one. */
+  pendingElement(source: Element): HTMLElement | undefined {
+    return this.#pending.get(source)?.container;
+  }
+
+  /**
+   * FR-001/FR-002: mark a passage as being translated, in the slot its translation will occupy.
+   * Idempotent, and it refuses a passage that already shows a translation — one passage never holds
+   * a mark and a translation at the same time (I1). The node is journalled before it is visible.
+   */
+  showPending(source: Element, unitId: string): HTMLElement {
+    const rendered = this.#rendered.get(source);
+    if (rendered) return rendered.container;
+
+    const existing = this.#pending.get(source);
+    if (existing) {
+      if (existing.unitId !== unitId) {
+        this.#journal.recordAttribute(existing.container, "data-ipt-unit");
+        existing.container.setAttribute("data-ipt-unit", unitId);
+        existing.unitId = unitId;
+      }
+      return existing.container;
+    }
+
+    const container = source.ownerDocument.createElement("div");
+    this.#journal.recordAttribute(container, "data-ipt");
+    this.#journal.recordAttribute(container, "data-ipt-unit");
+    this.#journal.recordAttributeOnce(container, "aria-hidden");
+    this.#journal.recordStyle(container);
+    container.setAttribute("data-ipt", PENDING_MARKER);
+    container.setAttribute("data-ipt-unit", unitId);
+    // Wordless by construction: the rotation is the box (styles/content.css). Nothing to announce.
+    container.setAttribute("aria-hidden", "true");
+
+    this.#place(container, source);
+    this.#journal.recordInsert(container, container.parentNode ?? source, container.nextSibling);
+    this.#pending.set(source, { container, source, unitId });
+    return container;
+  }
+
+  /**
+   * FR-021: a mark always ends. This is the removal half — used when the passage fails, is refused
+   * by a cap, or the run is cancelled. Returns whether a mark was actually there.
+   */
+  removePending(source: Element): boolean {
+    const pending = this.#pending.get(source);
+    if (!pending) return false;
+    pending.container.remove();
+    this.#pending.delete(source);
+    return true;
+  }
+
+  /** Every passage currently wearing a mark, in insertion order. */
+  pendingSources(): Element[] {
+    return Array.from(this.#pending.keys());
   }
 
   setTargetLang(lang: string): void {
@@ -152,6 +236,8 @@ export class Renderer {
       this.#place(record.container, record.source);
       this.#hideSource(record, mode === "only");
     }
+    // A mark is placed by the same rule as a translation, so a mode switch has to move it too.
+    for (const pending of this.#pending.values()) this.#place(pending.container, pending.source);
   }
 
   /** FR-020: only a real translation may be rendered, and only as text. */
@@ -160,6 +246,11 @@ export class Renderer {
     if (clean.length === 0) throw new Error("Refusing to render an empty translation (FR-020)");
 
     const lang = unit.targetLang ?? this.#targetLang;
+    // FR-003: a mark becomes the translation in place. Same node, same slot, one journal insert —
+    // which is what makes "replaced in the same position" a structural fact rather than a hope.
+    const pending = this.#pending.get(source);
+    if (pending) return this.#convertPending(pending, unit.id, clean, lang);
+
     // FR-001/FR-002: a block owns one container. A later part (or a re-render) rewrites the text of
     // the container already attached to this source instead of detaching it and building another.
     const rendered = this.#rendered.get(source);
@@ -206,15 +297,68 @@ export class Renderer {
     this.#captureBaseTypography(record);
     this.#applyTypography(record);
 
+    this.#beforeMutation?.();
     this.#place(container, source);
     this.#journal.recordInsert(container, container.parentNode ?? source, container.nextSibling);
     this.#hideSource(record, this.#mode === "only");
     this.#rendered.set(source, record);
     this.#applyPresentation(record);
+    this.#afterMutation?.();
+    return container;
+  }
+
+  /**
+   * Turns the existing mark node into the passage's translation. Every attribute the pending state
+   * wrote is rewritten or removed here, so nothing of the mark survives into the rendered state.
+   */
+  #convertPending(pending: PendingRecord, unitId: string, text: string, lang: string): HTMLElement {
+    const { container, source } = pending;
+    this.#pending.delete(source);
+    this.#beforeMutation?.();
+
+    this.#journal.recordAttribute(container, "data-ipt");
+    this.#journal.recordAttribute(container, "data-ipt-unit");
+    this.#journal.recordAttributeOnce(container, "lang");
+    this.#journal.recordAttributeOnce(container, "data-ipt-style");
+    this.#journal.recordAttributeOnce(container, "dir");
+    this.#journal.recordStyle(container);
+
+    container.setAttribute("data-ipt", TARGET_MARKER);
+    container.setAttribute("data-ipt-unit", unitId);
+    container.setAttribute("lang", lang);
+    container.setAttribute("data-ipt-style", this.#style);
+    // The journal already holds aria-hidden's original value (absent); removing it needs no entry.
+    container.removeAttribute("aria-hidden");
+    container.textContent = text;
+    this.#applyDirection(container, lang);
+
+    this.#journal.recordAttribute(source, "data-ipt");
+    this.#journal.recordAttribute(source, "data-ipt-unit");
+    source.setAttribute("data-ipt", SOURCE_MARKER);
+    source.setAttribute("data-ipt-unit", unitId);
+
+    this.#inheritTypography(source, container);
+
+    const record: RenderedRecord = {
+      container,
+      source,
+      hidden: false,
+      baseColor: container.style.getPropertyValue("color"),
+      baseFontFamily: "",
+      baseFontSizePx: null,
+      baseLineHeight: "",
+    };
+    this.#captureBaseTypography(record);
+    this.#applyTypography(record);
+    this.#hideSource(record, this.#mode === "only");
+    this.#rendered.set(source, record);
+    this.#applyPresentation(record);
+    this.#afterMutation?.();
     return container;
   }
 
   removeUnit(source: Element): boolean {
+    if (this.removePending(source)) return true;
     const record = this.#rendered.get(source);
     if (!record) return false;
     record.container.remove();

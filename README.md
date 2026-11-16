@@ -14,6 +14,11 @@ travels only to the endpoint you configure; page text travels only there too.
   fills the fields, the credential is still yours to enter, and any endpoint works.
 - **Bilingual reading.** Each paragraph gets its translation as an adjacent block, with the display
   mode you choose (translation below, above, or instead of the original).
+- **Progressive, on demand.** Translation is requested for the passages you are about to read — the
+  screen in front of you plus one screenful — instead of the whole page. Each such passage wears a
+  small rotating mark in the exact slot its translation will take, and that mark becomes the
+  translation when it arrives. Scrolling asks for the next stretch; text you never reach is never
+  sent, and therefore never paid for.
 - **Fifteen translation display styles.** None, dashed/solid/dotted underline, dashed/solid border,
   blur (study mode), transparency, divider, highlight, marker pen, marker pen 2, quote, weakened and
   gray — each with a generated preview icon, applied live without re-translating, and overridable per

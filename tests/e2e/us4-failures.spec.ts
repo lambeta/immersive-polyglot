@@ -175,6 +175,16 @@ test("an oversized page renders its first passages before the last batch is disp
     .poll(async () => (await jobStatus(extension, url)).state, { timeout: 120_000 })
     .toBe("completed");
 
+  // Feature 007: a long page is translated as the reader reads it, so this reader reads it. The
+  // "progressive" claim below is what this test has always been about, not the whole-page sweep.
+  for (let step = 0; step < 20; step += 1) {
+    await page.evaluate(() => window.scrollBy(0, 1600));
+    await page.waitForTimeout(350);
+  }
+  await expect
+    .poll(async () => (await jobStatus(extension, url)).state, { timeout: 60_000 })
+    .toBe("completed");
+
   const firstTargetAt = await page.evaluate(
     () => (window as unknown as { __firstTargetAt: number }).__firstTargetAt,
   );

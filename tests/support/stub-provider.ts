@@ -51,6 +51,12 @@ export interface StubOptions {
 export interface StubProvider {
   origin: string;
   requests: StubRequest[];
+  /**
+   * Every source segment the provider was actually asked to translate, in arrival order, flattened
+   * across requests. Feature 007's demand claims are judged on this record rather than on what the
+   * page looks like: a test asks "which passages were sent?", not "how many requests were made?".
+   */
+  requestedSegments(): string[];
   setMode(mode: StubMode, options?: { failFirst?: number; latencyMs?: number }): void;
   reset(): void;
   close(): Promise<void>;
@@ -227,6 +233,9 @@ export async function startStubProvider(options: StubOptions = {}): Promise<Stub
   return {
     origin,
     requests,
+    requestedSegments() {
+      return requests.flatMap((request) => extractSegments(request.body));
+    },
     setMode(nextMode, nextOptions = {}) {
       mode = nextMode;
       if (nextOptions.failFirst !== undefined) failFirst = nextOptions.failFirst;

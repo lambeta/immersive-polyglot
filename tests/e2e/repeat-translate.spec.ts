@@ -224,9 +224,13 @@ test("late content between presses is translated exactly once", async () => {
   await repeatCommand(extension, url, { type: "translatePage" }, 2);
   await waitForTranslation(page, 1);
   await waitForState(url, "completed");
-  await page.waitForTimeout(800);
 
+  // Feature 007 (FR-018): the injected passage is below the fold, so it is requested when the reader
+  // reaches it rather than on arrival. Pressing again is still absorbed, as 005 requires.
   const injected = page.locator("#injected-passage");
+  await injected.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1_200);
+  await waitForState(url, "completed");
   const beside = await injected.evaluate((element) => {
     let count = element.querySelectorAll('[data-ipt="target"]').length;
     let node = element.nextElementSibling;

@@ -1,7 +1,11 @@
 /**
- * Late content (infinite scroll, single-page apps, collapsed comments) must be translated on
- * demand without re-translating the page and without looping on our own mutations
- * (edge cases; FR-008).
+ * Late content (infinite scroll, single-page apps, collapsed comments) must be picked up without
+ * re-translating the page and without looping on our own mutations (edge cases; FR-008).
+ *
+ * Feature 007 changed this module's duty: it *reports* new content and no longer decides to
+ * translate it. Arriving is not a reason to spend the reader's provider quota — the demand window
+ * decides, so a comment thread that expands far below the fold waits until the reader gets there
+ * (FR-018). The page agent collects what arrives and asks the open run to re-evaluate.
  */
 
 import { MARKER_ATTRIBUTE } from "./markers.js";

@@ -28,3 +28,53 @@
   outline: 1px dashed currentColor;
   outline-offset: 2px;
 }
+/*
+ * A passage's translation is on its way (feature 007). The mark occupies the slot the translation
+ * will take, so the page moves by at most the height difference between a small box and a line of
+ * prose. It is wordless: the rotation is the box itself, which is why it adds no string to the
+ * catalog, takes no focus and is never announced (aria-hidden is set by the renderer).
+ *
+ * It deliberately carries no data-ipt-style, so none of the fifteen display styles — all keyed on
+ * that attribute — can blur, underline, highlight or conceal it.
+ */
+[data-ipt="pending"] {
+  display: flex;
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  margin: 0.35em 0 0.75em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+  animation: ipt-pending-rotate 0.8s linear infinite;
+}
+
+/* Above the original, the mark follows the translation's own margin rule. */
+[data-ipt="pending"][data-ipt-position="before"] {
+  margin: 0.75em 0 0.35em;
+}
+
+@keyframes ipt-pending-rotate {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* The reader asked for less motion: keep the mark, stop the movement. */
+@media (prefers-reduced-motion: reduce) {
+  [data-ipt="pending"] {
+    animation: none;
+    border-right-color: currentColor;
+  }
+}
+
+/* Progress on someone else's paper is not content. */
+@media print {
+  [data-ipt="pending"] {
+    display: none;
+  }
+}

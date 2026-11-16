@@ -1,5 +1,6 @@
 import { planBatches } from "./batcher.js";
-import { segmentPage, type SegmentDuplicate } from "./segmenter.js";
+import { PassageIndex, type Passage } from "./passage-index.js";
+import { segmentPage } from "./segmenter.js";
 import { Renderer } from "./renderer.js";
 import { Journal, restorePage } from "./restorer.js";
 import type { PageObserver } from "./observer.js";
@@ -62,6 +63,9 @@ export interface JobOptions {
   limiter?: RequestLimiter;
   observer?: PageObserver;
   onProgress?: (status: JobStatusPayload) => void;
+  /** Feature 007 FR-027: pins the reader's place across each render. */
+  beforeMutation?(): void;
+  afterMutation?(): void;
   view?: Window | null;
 }
 
@@ -94,12 +98,10 @@ export class TranslationJob {
   readonly #journal = new Journal();
   readonly #renderer: Renderer;
   readonly #units: TranslationUnit[] = [];
-  readonly #duplicates: SegmentDuplicate[] = [];
-  /** Parts of each ordinary source block, in collection order; sorted by partIndex when rendered. */
-  readonly #blockParts = new Map<Element, TranslationUnit[]>();
-  /** Parts of each duplicate block, keyed by the duplicate element. */
-  readonly #duplicateBlocks = new Map<Element, SegmentDuplicate[]>();
+  /** Block ↔ parts ↔ repeated occurrences, shared with the demand pump (feature 007). */
+  readonly #passages = new PassageIndex();
   readonly #byId = new Map<string, TranslationUnit>();
+  #batchSeq = 0;
   readonly #controllers = new Map<string, AbortController>();
   #state: JobState = "idle";
   #cancelled = false;
@@ -118,6 +120,8 @@ export class TranslationJob {
       ...(options.typography ? { typography: options.typography } : {}),
       targetLang: options.targetLang,
       view: options.view ?? null,
+      ...(options.beforeMutation ? { beforeMutation: options.beforeMutation } : {}),
+      ...(options.afterMutation ? { afterMutation: options.afterMutation } : {}),
     });
   }
 
@@ -134,7 +138,21 @@ export class TranslationJob {
   }
 
   get counts(): JobCounts {
-    return countUnits(this.#units, this.#duplicates.length);
+    return countUnits(this.#units, this.#occurrenceCount());
+  }
+
+  /** Passages that still have something to request, in document order (feature 007). */
+  pendingPassages(): Passage[] {
+    return this.#passages.pending();
+  }
+
+  /** Every passage the run knows about, in document order: the demand pump's rank source. */
+  passages(): Passage[] {
+    return this.#passages.all();
+  }
+
+  #occurrenceCount(): number {
+    return this.#passages.all().reduce((total, passage) => total + passage.occurrences.length, 0);
   }
 
   get state(): JobState {
@@ -166,24 +184,13 @@ export class TranslationJob {
       }
       this.#byId.set(unit.id, unit);
       this.#units.push(unit);
-      if (unit.state === "queued" && unit.domRef) {
-        const parts = this.#blockParts.get(unit.domRef) ?? [];
-        parts.push(unit);
-        this.#blockParts.set(unit.domRef, parts);
-      }
+      if (unit.state === "queued" && unit.domRef) this.#passages.addUnit(unit);
       added += 1;
     }
     for (const duplicate of result.duplicates) {
       const original = this.#byId.get(duplicate.ofUnitId);
       if (!original || original.state !== "queued") continue;
-      const known = this.#duplicates.some(
-        (entry) => entry.element === duplicate.element && entry.partIndex === duplicate.partIndex,
-      );
-      if (known) continue;
-      this.#duplicates.push(duplicate);
-      const entries = this.#duplicateBlocks.get(duplicate.element) ?? [];
-      entries.push(duplicate);
-      this.#duplicateBlocks.set(duplicate.element, entries);
+      this.#passages.addOccurrence(duplicate);
     }
     return added;
   }
@@ -214,7 +221,7 @@ export class TranslationJob {
     this.#state = "translating";
     this.#emit();
 
-    const tasks = plan.batches.map((batch) => this.#runBatch(batch.units, batch.index));
+    const tasks = plan.batches.map((batch) => this.dispatchUnits(batch.units));
     await Promise.all(tasks);
 
     if (!this.#cancelled) {
@@ -222,6 +229,34 @@ export class TranslationJob {
     }
     this.#emit();
     return this.result();
+  }
+
+  /**
+   * Feature 007: one batch, dispatched on demand. The demand pump calls this; `run()` calls it for
+   * every batch at once, which is exactly what "the whole page is inside the window" means.
+   */
+  async dispatchUnits(batchUnits: TranslationUnit[]): Promise<void> {
+    if (this.#cancelled) return;
+    await this.#runBatch(batchUnits, this.#batchSeq++);
+  }
+
+  /** The panel says a round is in progress only while one is (R9). */
+  beginRound(): void {
+    if (this.#cancelled) return;
+    if (this.#state === "idle") this.#state = "segmenting";
+    this.#state = "translating";
+    this.#emit();
+  }
+
+  /**
+   * ...and says the page is translated for what the reader has reached, not for the whole document
+   * (R9). Passages below the fold stay queued until the reader scrolls to them; counting them as
+   * "still owed" would leave the panel saying "Translating…" forever.
+   */
+  endRound(): void {
+    if (this.#cancelled) return;
+    this.#state = this.#failure ? "failed" : "completed";
+    this.#emit();
   }
 
   async #runBatch(batchUnits: TranslationUnit[], batchIndex: number): Promise<void> {
@@ -237,6 +272,7 @@ export class TranslationJob {
       if (this.#budgetRefuse(unit)) {
         unit.state = "skipped";
         unit.skipReason = "capReached";
+        this.#settleMark(unit);
         continue;
       }
       dispatchable.push(unit);
@@ -247,7 +283,12 @@ export class TranslationJob {
     const requestId = `${this.#jobId}_${batchIndex}`;
     const controller = new AbortController();
     this.#controllers.set(requestId, controller);
-    for (const unit of dispatchable) unit.state = "translating";
+    // FR-001: the mark is visible before the request leaves, so the reader sees the passage they are
+    // looking at being worked on rather than a page that does nothing and then fills in.
+    for (const unit of dispatchable) {
+      unit.state = "translating";
+      this.#showPending(unit);
+    }
     this.#emit();
 
     try {
@@ -315,6 +356,24 @@ export class TranslationJob {
     this.#options.onProgress?.(this.status());
   }
 
+  /**
+   * FR-001: mark passages that have just entered the queue, before any request is issued. One mark
+   * per source block; the renderer refuses a block that already shows a translation.
+   */
+  markPassages(elements: readonly Element[]): void {
+    for (const element of elements) {
+      const unit = this.#passages.partsOf(element)[0];
+      if (unit) this.#renderer.showPending(element, unit.id);
+    }
+  }
+
+  /** One mark per source block; the renderer refuses a block that already shows a translation. */
+  #showPending(unit: TranslationUnit): void {
+    const element = unit.domRef;
+    if (!element || !element.isConnected) return;
+    this.#renderer.showPending(element, unit.id);
+  }
+
   #render(unit: TranslationUnit): void {
     const element = unit.domRef;
     if (!element || !element.isConnected) return;
@@ -326,7 +385,7 @@ export class TranslationJob {
    * the renderer, which owns the single container for that block (FR-001, FR-002, FR-003).
    */
   #renderBlock(element: Element): void {
-    const units = this.#blockParts.get(element) ?? [];
+    const units = this.#passages.partsOf(element);
     const parts: { id: string; partIndex: number; text: string; targetLang: string }[] = [];
     for (const unit of units) {
       parts.push({
@@ -339,8 +398,7 @@ export class TranslationJob {
     }
     // A sentence repeated inside one block is registered as a duplicate of an earlier part of the
     // same block. It is an extra part of this passage, not a separate duplicate block.
-    for (const entry of this.#duplicates) {
-      if (entry.element !== element) continue;
+    for (const entry of this.#passages.occurrencesOf(element)) {
       const original = this.#byId.get(entry.ofUnitId);
       if (!original || original.domRef !== element) continue;
       parts.push({
@@ -369,13 +427,17 @@ export class TranslationJob {
   }
 
   #renderDuplicates(unit: TranslationUnit): void {
+    // Which passages borrow this unit's text; each of them is then composed from ALL of its own
+    // occurrences, so a passage built from several borrowed parts is never left half-filled.
     const touched = new Set<Element>();
-    for (const [element, entries] of this.#duplicateBlocks) {
-      if (touched.has(element) || !element.isConnected) continue;
-      if (!entries.some((entry) => entry.ofUnitId === unit.id)) continue;
-      touched.add(element);
+    for (const occurrence of this.#passages.occurrencesOfUnit(unit.id)) touched.add(occurrence.element);
 
-      const ordered = entries.slice().sort((left, right) => left.partIndex - right.partIndex);
+    for (const element of touched) {
+      if (!element.isConnected) continue;
+      const ordered = this.#passages
+        .occurrencesOf(element)
+        .slice()
+        .sort((left, right) => left.partIndex - right.partIndex);
       const blockId = ordered[0]?.unitId;
       if (!blockId) continue;
       const contributing: { text: string; targetLang: string }[] = [];
@@ -402,6 +464,21 @@ export class TranslationJob {
   #markUnitFailed(unit: TranslationUnit, errorClass: ErrorClass): void {
     unit.state = "failed";
     unit.errorClass = errorClass;
+    this.#settleMark(unit);
+  }
+
+  /**
+   * FR-021: a mark must never outlive its reason. Once a passage has no part still queued or in
+   * flight and has not produced a translation, its mark is removed — the reader sees nothing in the
+   * slot rather than a rotation that will never end.
+   */
+  #settleMark(unit: TranslationUnit): void {
+    const element = unit.domRef;
+    if (!element) return;
+    const parts = this.#passages.partsOf(element);
+    const stillWorking = parts.some((part) => part.state === "queued" || part.state === "translating");
+    const translated = parts.some((part) => part.state === "translated");
+    if (!stillWorking && !translated) this.#renderer.removePending(element);
   }
 
   #markFailed(units: TranslationUnit[], errorClass: ErrorClass): void {
@@ -442,6 +519,8 @@ export class TranslationJob {
     for (const unit of this.#units) {
       if (unit.state === "queued" || unit.state === "translating") unit.state = "cancelled";
     }
+    // FR-024: stopping removes every mark at once, whether or not its request ever answers.
+    for (const source of this.#renderer.pendingSources()) this.#renderer.removePending(source);
     this.#emit();
   }
 
@@ -482,7 +561,7 @@ export class TranslationJob {
     return {
       segmentsTranslated: counts.translated,
       approxChars: this.#charsSent,
-      reusedSegments: this.#duplicates.length,
+      reusedSegments: this.#occurrenceCount(),
       perProvider: { [this.#options.providerId]: counts.translated },
     };
   }
@@ -493,7 +572,7 @@ export class TranslationJob {
       state: this.#state,
       counts,
       capReached: this.#capReached,
-      reused: this.#duplicates.length,
+      reused: this.#occurrenceCount(),
       skipped: this.#skippedCount(),
       ...(this.#failure ? { failure: this.#failure } : {}),
     };

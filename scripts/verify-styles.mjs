@@ -190,6 +190,20 @@ async function waitForTargets(page, minimum) {
   );
 }
 
+/**
+ * Fills a long page the way a reader does (feature 007: translation is requested for what is about to
+ * be read, not for the whole document). Returns the number of translated blocks reached.
+ */
+async function fillByReading(page, target) {
+  for (let step = 0; step < 80; step += 1) {
+    const count = await page.evaluate(() => document.querySelectorAll('[data-ipt="target"]').length);
+    if (count >= target) return count;
+    await page.evaluate(() => window.scrollBy(0, Math.round(window.innerHeight * 0.8)));
+    await page.waitForTimeout(250);
+  }
+  return page.evaluate(() => document.querySelectorAll('[data-ipt="target"]').length);
+}
+
 async function waitForStyle(page, styleId) {
   await page.waitForFunction(
     (style) => {
@@ -428,14 +442,13 @@ async function main() {
       }
     }
 
-    // 5. Restyle time on a page holding 120 translated blocks (SC-002).
+    // 5. Restyle time on a long page, read through so that its blocks are translated (SC-002).
     const longUrl = stub.origin + "/pages/_generated-long.html";
     const longPage = await extension.context.newPage();
     await longPage.goto(longUrl, { waitUntil: "domcontentloaded" });
     await longPage.waitForFunction(() => document.documentElement.dataset["iptReady"] === "1");
     await sendToTab(extension.context, longUrl, { type: "translatePage" });
-    await waitForTargets(longPage, 100);
-    const blockCount = await longPage.evaluate(() => document.querySelectorAll('[data-ipt="target"]').length);
+    const blockCount = await fillByReading(longPage, 100);
     const startedAt = Date.now();
     await sendToTab(extension.context, longUrl, { type: "setDisplayStyle", style: "marker" });
     await waitForStyle(longPage, "marker");
