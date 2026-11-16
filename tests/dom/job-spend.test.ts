@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TranslationJob, type BatchCaller, type BatchReply } from "../../src/content/job.js";
+import type { RequestLimiter } from "../../src/content/limiter.js";
 import type { Settings, UsageReport } from "../../src/shared/types.js";
 import { buildPage, type TestPage } from "./helpers.js";
 import { PREFIX, settings } from "./job-harness.js";
@@ -205,5 +206,65 @@ describe("the reporting gate (R12, FR-023)", () => {
 
     for (const node of Array.from(page.document.querySelectorAll("[data-ipt]"))) node.remove();
     expect(job.status().usage?.spend).toBeUndefined();
+  });
+});
+
+describe("the split the provider did not send (FR-008)", () => {
+  it("records every prompt token as a miss when no cache counters arrive", async () => {
+    const page = buildPage(TWO_PARAGRAPHS);
+    const caller = new UsageCaller({
+      promptTokens: 5_000,
+      completionTokens: 500,
+      totalTokens: 5_500,
+    });
+    const job = jobFor(page, caller);
+    await job.run();
+
+    const spend = job.status().usage?.spend;
+    expect(spend?.tokens.hit).toBe(0);
+    expect(spend?.tokens.miss).toBe(caller.requests.length * 5_000);
+    // Priced as if nothing was cached: 5,000 missed input + 500 output, at the tier's rates.
+    const [offPeak, peak] = [caller.requests.length * 0.007, caller.requests.length * 0.014];
+    const amount = spend?.price?.amount ?? -1;
+    expect(Math.abs(amount - offPeak) < 1e-9 || Math.abs(amount - peak) < 1e-9).toBe(true);
+  });
+});
+
+describe("the tier belongs to the request, not the queue (FR-011)", () => {
+  it("prices a batch queued across 09:00 by the instant it is actually sent", async () => {
+    const page = buildPage(TWO_PARAGRAPHS);
+    const queuedAt = Date.parse("2026-03-10T08:59:59+08:00");
+    const sentAt = Date.parse("2026-03-10T09:00:01+08:00");
+    let clock = queuedAt;
+    const now = vi.spyOn(Date, "now").mockImplementation(() => clock);
+    try {
+      const caller = new UsageCaller(DEEPSEEK_USAGE);
+      // A limiter that holds the batch until the peak window has opened, then sends it.
+      const limiter = {
+        run: async <T>(task: () => Promise<T>): Promise<T> => {
+          clock = sentAt;
+          return task();
+        },
+      } as unknown as RequestLimiter;
+      const job = new TranslationJob({
+        document: page.document,
+        root: page.body,
+        settings: deepseekSettings,
+        providerId: "p1",
+        displayMode: "bilingual",
+        targetLang: "zh",
+        sourceLang: "en",
+        caller,
+        limiter,
+        view: page.window,
+      });
+      await job.run();
+
+      // 09:00:01 is peak, at exactly 2x the amount the queue instant would have produced.
+      const amount = job.status().usage?.spend?.price?.amount ?? -1;
+      expect(amount).toBeCloseTo(caller.requests.length * 0.00616, 10);
+    } finally {
+      now.mockRestore();
+    }
   });
 });

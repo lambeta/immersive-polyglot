@@ -61,9 +61,11 @@ always present).
 - The amount is wrapped by a catalogue message (`≈ ¥{amount}` / `≈ ${amount}`), so the symbol's
   position is a translation decision, not a formatting accident.
 - Precision: at least two significant digits, at most six fraction digits, using the interface
-  language's separators. A non-zero amount never renders as `0`; if the default precision would, one
-  more fraction digit is used (up to six).
-- The basis (`{provider} list · {snapshot}`) is on the same row and is reachable as text (FR-009,
+  language's separators. A non-zero amount never renders as `0`; if six fraction digits would, more
+  are used — up to eight, the precision of the smallest charge one token can produce (an off-peak
+  cache hit, ¥0.00000002). Six is the normal ceiling, eight the arithmetic floor (FR-013, amended
+  2026-11-16).
+- The basis (`{provider} · {snapshot}`) is on the same row and is reachable as text (FR-009,
   SC-015).
 - The estimate is never called a bill, invoice, charge or amount due.
 

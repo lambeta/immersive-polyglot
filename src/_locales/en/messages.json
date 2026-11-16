@@ -714,7 +714,7 @@
     "message": "≈ ${amount}"
   },
   "popupSpendBasis": {
-    "message": "{provider} list · {snapshot}"
+    "message": "{provider} · {snapshot}"
   },
   "popupSpendNoPriceList": {
     "message": "No published price for this provider."

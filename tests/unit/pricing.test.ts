@@ -83,12 +83,31 @@ describe("price arithmetic (R7)", () => {
     );
   });
 
-  it("charges every input token at the miss rate when the split is missing", () => {
-    const unsplit = estimateSpend(spend({ offPeak: { hit: 0, miss: 5_000, out: 500 } }));
-    const splitAsMiss = estimateSpend(
-      spend({ offPeak: { hit: 0, miss: 5_000, out: 500 } }),
+  it("charges cached input at the hit rate and only the uncached rest at the miss rate", () => {
+    // The same 5,000 input tokens, priced two ways. The published list makes a hit 50x cheaper
+    // than a miss, so a run that charged one rate for both could not match either figure.
+    const allCached = estimateSpend(spend({ offPeak: { hit: 5_000, miss: 0, out: 0 } }));
+    const allUncached = estimateSpend(spend({ offPeak: { hit: 0, miss: 5_000, out: 0 } }));
+    expect("amount" in allCached && allCached.amount).toBeCloseTo((5_000 * 0.02) / 1_000_000, 12);
+    expect("amount" in allUncached && allUncached.amount).toBeCloseTo(
+      (5_000 * 1) / 1_000_000,
+      12,
     );
-    expect(unsplit).toEqual(splitAsMiss);
+    expect("amount" in allUncached && allUncached.amount).toBeCloseTo(
+      ("amount" in allCached ? allCached.amount : 0) * 50,
+      12,
+    );
+  });
+
+  it("prices a report with no cache split as if every input token missed (FR-008)", () => {
+    // What the job records for a report without cache counters: hit 0, miss = prompt. Charged at
+    // the miss rate it is dearer than the fully cached twin, which is the direction FR-008 needs.
+    const unsplit = estimateSpend(spend({ offPeak: { hit: 0, miss: 5_000, out: 500 } }));
+    const cached = estimateSpend(spend());
+    expect("amount" in unsplit && unsplit.amount).toBeCloseTo(0.007, 12);
+    expect("amount" in unsplit && unsplit.amount).toBeGreaterThan(
+      "amount" in cached ? cached.amount : 0,
+    );
   });
 
   it("chooses the currency by target language, without conversion", () => {
@@ -148,6 +167,20 @@ describe("formatting (FR-013)", () => {
   it("keeps whole amounts readable with at most six decimals", () => {
     expect(formatAmount(1234.5678)).toBe("1,234.57");
     expect(formatAmount(12.5)).toBe("12.5");
+  });
+
+  it("passes six decimals only where six would read as zero (FR-013, amended 2026-11-16)", () => {
+    // Six is the normal ceiling: one off-peak uncached token is exactly ¥0.000001.
+    expect(formatAmount(0.000001)).toBe("0.000001");
+    // Below it the decimals a non-zero estimate needs win over the ceiling, up to the eight that
+    // the smallest charge one token can produce (an off-peak cache hit) requires.
+    expect(formatAmount(0.0000004)).toBe("0.0000004");
+    expect(formatAmount(0.00000002)).toBe("0.00000002");
+    expect(formatAmount(0.00000002, "de")).toBe("0,00000002");
+    for (const amount of [0.0000004, 0.00000002]) {
+      expect(formatAmount(amount)).not.toBe("0");
+      expect((formatAmount(amount).split(".")[1] ?? "").length).toBeLessThanOrEqual(8);
+    }
   });
 
   it("uses the interface language's separators", () => {

@@ -128,3 +128,75 @@ test("the panel stays inside 600 px with the row and the note", async () => {
   expect(text.match(/[0-9]/gu)?.length ?? 0).toBeGreaterThan(0);
   await popup.close();
 });
+
+test("the priced row survives 200 % zoom, 30 % longer labels and both themes", async () => {
+  await seed([{ id: "priced", endpoint: pricedEndpoint(), model: "deepseek-flash" }]);
+  const url = `${stub.origin}/pages/news-article-a.html`;
+  await translateTo(url, 0);
+
+  const popup = await openPanel();
+  await expect(popup.locator("#usage .usage__spend")).toHaveCount(1);
+  await expect(popup.locator("#usage .usage__basis")).toHaveCount(1);
+
+  // FR-022, SC-010: light and dark, at the panel's own 384 px, with the row and its basis.
+  for (const scheme of ["light", "dark"] as const) {
+    await popup.emulateMedia({ colorScheme: scheme });
+    expect(await surfaceHeight(popup), `height in ${scheme}`).toBeLessThanOrEqual(600);
+    expect(await overflowOf(popup), `document overflow in ${scheme}`).toBeLessThanOrEqual(1);
+    expect(await overflowOf(popup, "#usage"), `record overflow in ${scheme}`).toBeLessThanOrEqual(1);
+    const clipped = await popup.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>("#usage .usage__spend span"))
+        .filter((node) => node.scrollWidth > node.clientWidth + 1)
+        .map((node) => node.className),
+    );
+    expect(clipped, `clipped spans in ${scheme}`).toEqual([]);
+  }
+
+  // 200 % zoom with every catalogue string 30 % longer, grown the way a longer locale renders it.
+  // The measurement is the record's, not the document's: the panel is a fixed 384 px surface, so a
+  // zoomed document is always wider than its own viewport and says nothing about the row.
+  const measured = await popup.evaluate(() => {
+    const row = document.querySelector<HTMLElement>("#usage .usage__spend");
+    const record = document.querySelector<HTMLElement>("#usage");
+    if (!row || !record) throw new Error("no spend row");
+    for (const node of Array.from(row.querySelectorAll<HTMLElement>("span"))) {
+      if (node.classList.contains("usage__sep")) continue;
+      const text = node.textContent ?? "";
+      node.textContent = `${text} ${text.slice(0, Math.ceil(text.length * 0.3))}`;
+    }
+    document.body.style.zoom = "2";
+
+    const rect = (selector: string): DOMRect | null =>
+      document.querySelector<HTMLElement>(selector)?.getBoundingClientRect() ?? null;
+    const overlaps = (a: DOMRect, b: DOMRect): boolean =>
+      !(a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1);
+    const bounds = record.getBoundingClientRect();
+    const spans = Array.from(row.querySelectorAll<HTMLElement>("span"));
+    const facts = rect(".usage__spend-facts");
+    const basis = rect(".usage__basis");
+    return {
+      clipped: spans
+        .filter((node) => node.scrollWidth > node.clientWidth + 1)
+        .map((node) => node.className),
+      outside: spans
+        .filter((node) => {
+          const box = node.getBoundingClientRect();
+          return box.right > bounds.right + 1 || box.left < bounds.left - 1;
+        })
+        .map((node) => node.className),
+      overlap: facts !== null && basis !== null && overlaps(facts, basis),
+      recordOverflow: record.scrollWidth - record.clientWidth,
+      text: row.textContent ?? "",
+    };
+  });
+
+  expect(measured.clipped, "clipped at 200 % zoom").toEqual([]);
+  expect(measured.outside, "outside the record at 200 % zoom").toEqual([]);
+  expect(measured.overlap, "facts and basis overlap").toBe(false);
+  expect(measured.recordOverflow).toBeLessThanOrEqual(1);
+  // Both figures, the currency symbol and the basis are still on the row after the growth.
+  expect(measured.text).toContain("tokens spent");
+  expect(measured.text).toContain("≈ ¥");
+  expect(measured.text).toContain("DeepSeek ·");
+  await popup.close();
+});

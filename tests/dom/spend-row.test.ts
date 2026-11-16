@@ -13,7 +13,7 @@ function priced(overrides: Partial<SpendRecord> = {}): SpendRecord {
 }
 
 describe("the spend row", () => {
-  it("shows tokens and price on one row with the basis under it", () => {
+  it("shows tokens and price on one row with the basis on it", () => {
     const doc = document.implementation.createHTMLDocument("panel");
     const nodes = renderSpendRow(doc, priced(), "en");
 
@@ -23,8 +23,8 @@ describe("the spend row", () => {
     const text = row?.textContent ?? "";
     expect(text).toContain("5,500 tokens spent");
     expect(text).toContain("≈ ¥0.0031");
-    expect(text).toContain("DeepSeek list · 2026-11");
-    expect(row?.querySelector(".usage__basis")?.textContent).toBe("DeepSeek list · 2026-11");
+    expect(text).toContain("DeepSeek · 2026-11");
+    expect(row?.querySelector(".usage__basis")?.textContent).toBe("DeepSeek · 2026-11");
   });
 
   it("shows nothing at all when the run reported no usage", () => {

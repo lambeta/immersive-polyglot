@@ -48,6 +48,11 @@
   a defect on 2026-11-16. The price list covers the legacy model names DeepSeek still serves, priced at
   the rate the provider documents for them (its current page states legacy names are billed at the
   Flash price), and when a model genuinely cannot be priced the note names **which** model.
+- Q: FR-013 caps the price at six decimal places, but the smallest charge a single token can produce is
+  ¥0.00000002 — which promise wins below ¥0.000001? → A: Never showing a non-zero estimate as zero. Six
+  decimals stay the normal ceiling; below ¥0.000001 the formatter keeps as many decimals as two
+  significant digits need, up to eight, and no amount is ever rounded down to `0` (2026-11-16,
+  convergence T052).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -204,8 +209,9 @@ record with a screen reader and confirm each number carries its own label and un
   stays silent about that name rather than guessing a successor's price.
 - A provider returns usage with zero prompt and zero completion tokens (its own cache): the figures
   show measured zeros.
-- A price so small that four decimals would render it as zero: more decimals are used, up to six, so a
-  non-zero estimate never reads as zero.
+- A price so small that four decimals would render it as zero: more decimals are used — six normally, up
+  to the eight that one off-peak cache-hit token (¥0.00000002) can demand — so a non-zero estimate never
+  reads as zero.
 - A run is cancelled while a response is in flight: translations already on the page keep their
   figures; the in-flight response contributes nothing because its usage was never seen.
 - A page is translated, then reloaded: the record is empty, because it belongs to the run, not to the
@@ -253,8 +259,10 @@ record with a screen reader and confirm each number carries its own label and un
   be performed.
 - **FR-013**: The price MUST be displayed with at least two significant digits and at most six decimal
   places, using the interface language's decimal separator. Two significant digits is a floor, not a
-  rounding target, so a larger amount keeps the decimals it needs. A non-zero estimate MUST NOT be
-  displayed as zero.
+  rounding target, so a larger amount keeps the decimals it needs. Where six decimals would render a
+  non-zero estimate as zero, the estimate keeps the decimals it needs — up to eight, the precision the
+  smallest charge a single token can produce requires — rather than being rounded to zero. A non-zero
+  estimate MUST NOT be displayed as zero.
 - **FR-014**: The token figures and the price MUST cover exactly the same set of responses.
 - **FR-015**: Both figures MUST be scoped to one translation run on one page, MUST belong to that
   tab's page, and MUST NOT include any other page's run.

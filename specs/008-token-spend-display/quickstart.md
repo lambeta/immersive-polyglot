@@ -53,7 +53,7 @@ nothing, and that turning translation off clears the row.
 
 Two states to look for in the same run:
 
-- **priced**: one row `5,500 tokens spent · ≈ ¥0.0031` with `DeepSeek list · 2026-11` beneath it;
+- **priced**: one row `5,500 tokens spent · ≈ ¥0.0031 DeepSeek · 2026-11`;
 - **unpriced**: when the stub is switched to omit `usage`, no token row and no price row at all.
 
 Live update (SC-008) is sampled by the suite rather than eyeballed: the panel page stays open while

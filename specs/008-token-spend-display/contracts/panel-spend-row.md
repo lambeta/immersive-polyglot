@@ -11,14 +11,16 @@ sits after the characters-sent row and before the reuse row:
 1.  {n} segments translated
 2.  {n} characters sent           ← unchanged, keeps its place and value
 3.  {tokens} spent · ≈ {amount}   ← NEW, both figures on one row, basis on the same row
-    ({provider} list · {snapshot})
+    ({provider} · {snapshot})
 4.  {n} segments reused
 5.  {n} passages skipped
 6.  {n} passages failed
 ```
 
 The row is `li.usage__spend`; the basis is `span.usage__basis` inside it, rendered in muted type and
-allowed to wrap to a second visual line. When no price exists, `span.usage__note` carries the reason
+allowed to wrap to a second visual line. The source locale's basis is short enough to share the line
+at 384 px — the priced record still fits the panel's 600 px height (FR-022, SC-010) — and a longer
+locale wraps instead of pushing the row out. When no price exists, `span.usage__note` carries the reason
 in the same row. The whole row is one list item, not two.
 
 ## 2. States
@@ -44,7 +46,7 @@ does.
 | `popupSpendTokens` | `{count} tokens spent` | locale-formatted integer |
 | `popupSpendPriceCny` | `≈ ¥{amount}` | formatted amount |
 | `popupSpendPriceUsd` | `≈ ${amount}` | formatted amount |
-| `popupSpendBasis` | `{provider} list · {snapshot}` | provider label, snapshot `YYYY-MM` |
+| `popupSpendBasis` | `{provider} · {snapshot}` | provider label, snapshot `YYYY-MM` |
 | `popupSpendNoPriceList` | `No published price for this provider.` | — |
 | `popupSpendModelNotPriced` | `No published price for {model}.` | the configured model name |
 | `popupSpendUsageIncomplete` | `The provider did not report enough usage to price this run.` | — |

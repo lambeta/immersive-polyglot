@@ -173,14 +173,21 @@ function significantDigits(text: string): number {
 }
 
 /**
- * FR-013: at least two significant digits, at most six decimals, never a zero for a non-zero
- * amount. The six-decimal cap is the formatting default; the "never zero" promise wins in the one
- * unreachable corner where both cannot hold (a charge below ¥0.000001).
+ * How far the formatter may extend past six decimals. Eight is the arithmetic floor rather than a
+ * preference: one off-peak cache-hit token costs ¥0.00000002, and six decimals would read that as
+ * zero.
+ */
+const MAX_FRACTION_DIGITS = 8;
+
+/**
+ * FR-013 (amended 2026-11-16): at least two significant digits, at most six decimals, never a zero
+ * for a non-zero amount. Six decimals is the normal ceiling; below ¥0.000001 the "never zero"
+ * promise wins and the amount keeps the decimals it needs, up to eight.
  */
 export function formatAmount(amount: number, locale = "en"): string {
   if (!Number.isFinite(amount)) return "";
   if (amount === 0) return numberFormatter(locale, 2).format(0);
-  for (let digits = 2; digits <= 6; digits += 1) {
+  for (let digits = 2; digits <= MAX_FRACTION_DIGITS; digits += 1) {
     const text = numberFormatter(locale, digits).format(amount);
     if (significantDigits(text) >= 2) return text;
   }

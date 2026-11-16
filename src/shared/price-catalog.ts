@@ -60,7 +60,9 @@ export const PRICE_SNAPSHOT: PriceSnapshot = {
   provider: "DeepSeek",
   hosts: ["api.deepseek.com"],
   models: {
-    // deepseek-chat and deepseek-reasoner are deliberately absent (FR-028, owner confirmation).
+    // Only the models with a price row of their own. The legacy names DeepSeek still serves are
+    // priced through `aliases` below, at the Flash rate the provider documents for them — they must
+    // not be dropped (FR-028, owner correction 2026-11-16).
     "deepseek-flash": { CNY: FLASH_CNY, USD: FLASH_USD },
     "deepseek-v4-pro": { CNY: PRO_CNY, USD: PRO_USD },
   },

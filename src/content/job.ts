@@ -329,9 +329,14 @@ export class TranslationJob {
         targetLang: this.#options.targetLang,
         timeoutMs: provider.timeoutMs,
       };
-      const call = () => this.#options.caller.translate(payload, controller.signal);
-      // The tier is the one in effect when the request was made, not when the answer arrived.
-      const requestedAt = Date.now();
+      // The tier is the one in effect when the request is actually made, not when the answer
+      // arrived — and not when the batch was queued: behind the concurrency ceiling a batch can
+      // wait across a peak boundary, so the instant is read inside the call itself.
+      let requestedAt = 0;
+      const call = () => {
+        requestedAt = Date.now();
+        return this.#options.caller.translate(payload, controller.signal);
+      };
       // The limiter is the concurrency ceiling; cancellation still flows through the job's own
       // controller, so a cancelled job aborts its in-flight calls even when queued.
       const reply = this.#options.limiter ? await this.#options.limiter.run(call) : await call();

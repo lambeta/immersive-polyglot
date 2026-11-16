@@ -26,7 +26,7 @@ describe("accessibility of the spend row", () => {
     const text = row?.textContent ?? "";
     expect(text).toContain("5,500 tokens spent");
     expect(text).toContain("≈ ¥0.0031");
-    expect(text).toContain("DeepSeek list · 2026-11");
+    expect(text).toContain("DeepSeek · 2026-11");
     // One list item: a screen reader hears a single fact, not three unlabelled numbers.
     expect(row?.tagName).toBe("LI");
   });

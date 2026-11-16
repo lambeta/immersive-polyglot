@@ -92,7 +92,7 @@ test("the panel reports the tokens and the price of a translated page", async ()
   const text = (await popup.locator("#usage").textContent()) ?? "";
   expect(text).toContain(`${(requests * 5_500).toLocaleString("en")} tokens spent`);
   expect(text).toContain("≈ ¥");
-  expect(text).toContain("DeepSeek list · 2026-11");
+  expect(text).toContain("DeepSeek · 2026-11");
 
   await popup.reload();
   await popup.waitForSelector("#usage .usage__spend");
@@ -126,26 +126,107 @@ test("a profile that still says deepseek-chat is priced, not refused", async () 
   await popup.close();
 });
 
-test("the figures rise while the run is in flight and never move backwards", async () => {
+test("twenty arrivals each reach both figures within a second, and neither falls", async () => {
   await seedPricedProvider();
   stub.setMode("success", { latencyMs: 120 });
   const url = `${stub.origin}/pages/article-endless.html`;
-  const { page } = await translate(url);
-  await waitForTranslation(page, 1);
+  const page = await extension.openPage(url);
+  await waitForContentScript(page);
+  await page.bringToFront();
+
+  // The arrival clock lives in the page, so every instant is the same wall clock the panel reads.
+  await page.evaluate(() => {
+    const clock = window as unknown as { __arrivals?: number[] };
+    clock.__arrivals = [];
+    let seen = document.querySelectorAll('[data-ipt="target"]').length;
+    const timer = window.setInterval(() => {
+      const now = document.querySelectorAll('[data-ipt="target"]').length;
+      while (seen < now) {
+        clock.__arrivals?.push(Date.now());
+        seen += 1;
+      }
+      if (seen >= 20) window.clearInterval(timer);
+    }, 20);
+  });
 
   const popup = await openPanel();
-  const observed: number[] = [];
-  for (let sample = 0; sample < 40; sample += 1) {
-    const text = (await popup.locator("#usage .usage__tokens").textContent().catch(() => "")) ?? "";
-    const digits = Number(text.replace(/[^0-9]/gu, ""));
-    if (Number.isFinite(digits) && digits > 0) observed.push(digits);
-    if (observed.length >= 3) break;
-    await popup.waitForTimeout(100);
+  const translation = sendToTab(extension, url, { type: "translatePage" });
+
+  interface Sample {
+    at: number;
+    tokens: number;
+    price: string;
   }
-  for (let index = 1; index < observed.length; index += 1) {
-    expect(observed[index]).toBeGreaterThanOrEqual(observed[index - 1] ?? 0);
+  const samples: Sample[] = [];
+  const sampleOnce = async (): Promise<void> => {
+    const tokensText = await popup.locator("#usage .usage__tokens").textContent().catch(() => null);
+    const priceText = await popup.locator("#usage .usage__price").textContent().catch(() => null);
+    if (tokensText === null || priceText === null) return;
+    samples.push({
+      at: Date.now(),
+      tokens: Number(tokensText.replace(/[^0-9]/gu, "")),
+      price: priceText,
+    });
+  };
+  const readArrivals = async (): Promise<number[]> =>
+    page.evaluate(() =>
+      ((window as unknown as { __arrivals?: number[] }).__arrivals ?? []).slice(),
+    );
+
+  let arrivals: number[] = [];
+  let ticks = 0;
+  const deadline = Date.now() + 60_000;
+  while (arrivals.length < 20 && Date.now() < deadline) {
+    arrivals = await readArrivals();
+    await sampleOnce();
+    // Reading on feeds the demand window: a screenful at a time, the way a reader scrolls.
+    ticks += 1;
+    if (ticks % 8 === 0) await page.evaluate(() => window.scrollBy(0, 400));
+    await page.waitForTimeout(25);
   }
-  expect(observed.length).toBeGreaterThan(0);
+  // Keep sampling for a second after the twentieth arrival: SC-008's bound is measured from the
+  // arrival, so its own reflection must be inside the window too.
+  const settle = Date.now() + 1_500;
+  while (Date.now() < settle) {
+    await sampleOnce();
+    await page.waitForTimeout(25);
+  }
+  await translation;
+
+  expect(arrivals.length).toBeGreaterThanOrEqual(20);
+  expect(samples.length).toBeGreaterThan(2);
+
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  if (!first || !last) throw new Error("no samples");
+  for (let index = 1; index < samples.length; index += 1) {
+    const previous = samples[index - 1];
+    const current = samples[index];
+    if (!previous || !current) continue;
+    expect(current.tokens, "the token figure never falls").toBeGreaterThanOrEqual(previous.tokens);
+  }
+  expect(last.tokens).toBeGreaterThan(first.tokens);
+  expect(last.price).not.toBe(first.price);
+
+  // SC-008: each of the twenty arrivals is reflected in both figures within one second.
+  // The baseline is taken a moment before the arrival (the page stamps an arrival within one poll
+  // of seeing it, and the panel is sampled independently), so a rise cannot be mistaken for the
+  // state the arrival started from.
+  const GRACE_MS = 250;
+  const WINDOW_MS = 1_000;
+  for (const arrival of arrivals.slice(0, 20)) {
+    const before = samples.filter((sample) => sample.at <= arrival - GRACE_MS).at(-1);
+    const baseTokens = before?.tokens ?? 0;
+    const basePrice = before?.price ?? "";
+    const tokenRise = samples.find((sample) => sample.at >= arrival && sample.tokens > baseTokens);
+    const priceRise = samples.find(
+      (sample) => sample.at >= arrival && sample.price !== basePrice && sample.price.length > 0,
+    );
+    expect(tokenRise, `token figure after the arrival at ${arrival}`).toBeDefined();
+    expect(priceRise, `price after the arrival at ${arrival}`).toBeDefined();
+    expect((tokenRise?.at ?? Number.POSITIVE_INFINITY) - arrival).toBeLessThanOrEqual(WINDOW_MS);
+    expect((priceRise?.at ?? Number.POSITIVE_INFINITY) - arrival).toBeLessThanOrEqual(WINDOW_MS);
+  }
   await popup.close();
 });
 
