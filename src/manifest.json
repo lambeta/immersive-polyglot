@@ -54,7 +54,7 @@
   "commands": {
     "toggle-translation": {
       "suggested_key": {
-        "default": "Alt+T"
+        "default": "Alt+A"
       },
       "description": "__MSG_commandToggleTranslation__"
     }

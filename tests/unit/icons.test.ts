@@ -46,4 +46,14 @@ describe("extension icons", () => {
       expect(pngSize(path)).toEqual({ width: size, height: size });
     }
   });
+
+  it("ships the checked variant at the same four sizes (feature 009)", () => {
+    for (const size of SIZES) {
+      const path = join(ROOT, "src/icons/icon-" + size + "-check.png");
+      expect(existsSync(path), path).toBe(true);
+      expect(pngSize(path)).toEqual({ width: size, height: size });
+    }
+    // The checked master is the same mark plus the badge, not a second artwork.
+    expect(existsSync(join(ROOT, "src/icons/design-checked.svg"))).toBe(true);
+  });
 });

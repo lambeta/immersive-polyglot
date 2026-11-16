@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>No passages — feature 009</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f7f9fa; }
+      main { display: grid; place-items: center; gap: 12px; }
+    </style>
+  </head>
+  <body>
+    <!-- Deliberately holds no block the segmenter treats as a passage: no p, heading, li, td,
+         blockquote or caption. A run here must end with nothing on the page. -->
+    <main aria-label="An illustration with no readable text">
+      <svg width="160" height="100" role="img" aria-label="A decorative diagram">
+        <rect width="160" height="100" rx="10" fill="#dfe7ea"></rect>
+        <circle cx="80" cy="50" r="26" fill="#0d7480"></circle>
+      </svg>
+    </main>
+    <script>
+      document.documentElement.dataset.iptFixture = "no-passages";
+    </script>
+  </body>
+</html>

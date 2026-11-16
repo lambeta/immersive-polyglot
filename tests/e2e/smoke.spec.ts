@@ -30,7 +30,7 @@ test("the extension loads, the worker registers and the popup renders", async ()
     const popup = await extension.context.newPage();
     await popup.goto(extension.popupUrl);
     await expect(popup.locator("h1")).toHaveText("Immersive Polyglot");
-    await expect(popup.locator("#translate")).toHaveText("Translate this page");
+    await expect(popup.locator("#translate-label")).toHaveText("Translate this page");
     // No provider is configured, so translating is not offered as a working action.
     await expect(popup.locator("#translate")).toBeDisabled();
 

@@ -16,6 +16,7 @@ import {
   verifyProviderConnection,
 } from "./provider-client.js";
 import { DEFAULT_RETRY_POLICY, withRetry } from "./retry.js";
+import { BadgePainter, badgeOn, tabIdOf } from "./status-badge.js";
 
 /**
  * The service worker owns the wire and nothing else (research R3). It holds no job state: every
@@ -27,6 +28,8 @@ const store = createSettingsStore();
 const vault = new CredentialVault(store);
 const logger = new RedactingLogger();
 const inFlight = new Map<string, AbortController>();
+/** Feature 009: paints the page's own status onto that tab's toolbar icon. */
+const badgePainter = new BadgePainter({ onError: (message) => logger.info(message) });
 
 function post(port: chrome.runtime.Port, message: PortResponse): void {
   try {
@@ -238,8 +241,20 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
-async function handleCommand(command: CommandMessage, sendResponse: (reply: unknown) => void): Promise<void> {
+async function handleCommand(
+  command: CommandMessage,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (reply: unknown) => void,
+): Promise<void> {
   switch (command.type) {
+    case "jobUpdated": {
+      // Feature 009 FR-001–FR-008: the page is the authority; its own status paints its tab.
+      // A sender without a tab (an extension page, a test) paints nothing (FR-004).
+      const tabId = tabIdOf(sender);
+      if (tabId !== null) void badgePainter.apply(tabId, badgeOn(command.status));
+      sendResponse({ ok: true });
+      return;
+    }
     case "getCredentialMask":
       sendResponse({ masked: await vault.mask(command.providerId) });
       return;
@@ -287,7 +302,7 @@ async function handleCommand(command: CommandMessage, sendResponse: (reply: unkn
   }
 }
 
-chrome.runtime.onMessage.addListener((raw: unknown, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((raw: unknown, sender, sendResponse) => {
   let command: CommandMessage;
   try {
     command = parseCommand(raw);
@@ -296,7 +311,7 @@ chrome.runtime.onMessage.addListener((raw: unknown, _sender, sendResponse) => {
     sendResponse({ ok: false });
     return false;
   }
-  void handleCommand(command, sendResponse);
+  void handleCommand(command, sender, sendResponse);
   return true;
 });
 
@@ -313,6 +328,14 @@ chrome.commands?.onCommand.addListener(async (command) => {
 
 chrome.runtime.onInstalled.addListener(() => {
   void store.load();
+  // Feature 009: an update must not leave a previous version's check on any tab.
+  void badgePainter.clearAll();
+});
+
+// Feature 009: a navigated tab starts over, so its icon goes back to the plain mark. The browser
+// may reset a per-tab icon itself; the promise does not wait to find out (research R13).
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === "loading") void badgePainter.clearTab(tabId);
 });
 
 export { publicCredentialView };

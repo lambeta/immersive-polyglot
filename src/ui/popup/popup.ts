@@ -6,6 +6,7 @@ import { displayStyleById, resolveDisplayStyleForHost } from "../../shared/displ
 import { StylePicker } from "../shared/style-picker.js";
 import { previewIcon } from "../shared/style-preview.js";
 import { renderSpendRow } from "./spend-row.js";
+import { applyShortcutHint, shortcutFor } from "./shortcut-hint.js";
 import type { DisplayMode, DisplayStyleId, Settings } from "../../shared/types.js";
 import type { CommandMessage, JobStatusPayload } from "../../shared/messages.js";
 
@@ -128,6 +129,7 @@ async function persistSiteStyle(style: DisplayStyleId): Promise<void> {
 function render(): void {
   const current = status ?? IDLE;
   const translateButton = qs<HTMLButtonElement>(document, "#translate");
+  const translateLabel = qs<HTMLElement>(document, "#translate-label");
   const cancelButton = qs<HTMLButtonElement>(document, "#cancel");
   const statusLine = qs<HTMLElement>(document, "#status");
   const failure = qs<HTMLElement>(document, "#failure");
@@ -140,7 +142,8 @@ function render(): void {
 
   const active = current.state !== "idle";
   const enabledProviders = settings.providers.filter((provider) => provider.enabled);
-  translateButton.textContent = active ? t("popupRestore") : t("popupTranslate");
+  // Feature 009: the action words live in the label span, so the key chip beside them survives.
+  translateLabel.textContent = active ? t("popupRestore") : t("popupTranslate");
   translateButton.disabled = enabledProviders.length === 0 && !active;
   // FR-004: a disabled action always says why, and where to fix it.
   const noProvider = qs<HTMLElement>(document, "#no-provider");
@@ -219,6 +222,16 @@ async function persistSitePreference(mode: DisplayMode): Promise<void> {
   settings = await store.load();
 }
 
+/** The live binding, or null when the browser will not say (FR-021). */
+async function boundShortcut(): Promise<string | null> {
+  try {
+    if (!chrome.commands) return null;
+    return shortcutFor(await chrome.commands.getAll());
+  } catch {
+    return null;
+  }
+}
+
 async function boot(): Promise<void> {
   localize(document);
 
@@ -253,6 +266,9 @@ async function boot(): Promise<void> {
   const reply = (await sendCommand({ type: "getJobStatus" })) as JobStatusPayload | null;
   status = reply ?? null;
   render();
+
+  // Feature 009 US2: name the key the browser actually bound, read once per panel open.
+  applyShortcutHint(qs<HTMLButtonElement>(document, "#translate"), await boundShortcut());
 
   qs<HTMLSelectElement>(document, "#provider").addEventListener("change", (event) => {
     const value = (event.target as HTMLSelectElement).value;

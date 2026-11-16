@@ -50,6 +50,12 @@ limit while the primary action or the settings control is unreachable.
 The state dot is **decorative** (`aria-hidden`): the state is carried by the words beside it. Its colour
 is an aid, never the message.
 
+_Amended by feature 009 (2026-11-16):_ the primary action also displays the keyboard combination the
+browser has actually bound to the translate/restore command (for example `⌥A`), as a `<kbd>` inside the
+button — so it is part of the control's accessible name (action words, then the key) rather than a second
+control. It is secondary to the words, is not a focus stop, is hidden entirely when the browser reports no
+binding, and does not change the control's 44 px height or the panel's 384 px width.
+
 ## 4. Style tiles
 
 - Grid: 5 columns × 3 rows, 6 px gap, each tile 35 px tall, `--r-sm`.

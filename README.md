@@ -19,6 +19,15 @@ travels only to the endpoint you configure; page text travels only there too.
   small rotating mark in the exact slot its translation will take, and that mark becomes the
   translation when it arrives. Scrolling asks for the next stretch; text you never reach is never
   sent, and therefore never paid for.
+- **A check on the toolbar icon.** While translation is on for the page in front of you, the
+  extension's icon fills its lower-right corner with a flat pink patch and a white tick — the icon keeps
+  its size, so the mark reads as an added corner badge rather than a different icon. It appears as
+  a run starts — before the first translation lands — and is gone when the page is restored or
+  navigated, so a glance at the toolbar answers "is this tab being translated?" without opening
+  anything.
+- **The shortcut, named on the button.** The panel's translate control shows the combination the browser
+  has actually bound (Alt+A by default, `⌥A` on macOS) and shows nothing at all when nothing is bound.
+  A shortcut nobody can find is not a shortcut, and a hint for a key that does nothing is worse.
 - **Fifteen translation display styles.** None, dashed/solid/dotted underline, dashed/solid border,
   blur (study mode), transparency, divider, highlight, marker pen, marker pen 2, quote, weakened and
   gray — each with a generated preview icon, applied live without re-translating, and overridable per

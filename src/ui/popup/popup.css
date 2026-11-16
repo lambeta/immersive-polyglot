@@ -377,3 +377,28 @@ body {
 }
 
 
+
+/* --- feature 009: the shortcut hint on the primary action ------------------ */
+
+/*
+ * The chip is a secondary element inside the button: it inherits the action's ink, so its contrast
+ * is the same pair the theme suite already measures, and it never becomes a control of its own.
+ */
+
+.btn__key {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 3px 5px 4px;
+  border: 1px solid color-mix(in oklab, currentColor 34%, transparent);
+  border-radius: 5px;
+  background: color-mix(in oklab, currentColor 12%, transparent);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.btn__key[hidden] {
+  display: none;
+}

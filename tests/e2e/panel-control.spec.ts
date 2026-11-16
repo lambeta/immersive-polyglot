@@ -70,7 +70,7 @@ test("the panel shows the site, the state and exactly one primary action (T012)"
   await expect(popup.locator("h1")).toHaveText("Immersive Polyglot");
   await expect(popup.locator("#site-host")).toHaveText("127.0.0.1");
   await expect(popup.locator("#status")).toHaveText("Not translated");
-  await expect(popup.locator("#translate")).toHaveText("Translate this page");
+  await expect(popup.locator("#translate-label")).toHaveText("Translate this page");
   await expect(popup.locator("#translate")).toBeEnabled();
   // FR-001/FR-002: one filled action, and it is the translate control.
   await expect(popup.locator(".btn--primary")).toHaveCount(1);
@@ -79,7 +79,7 @@ test("the panel shows the site, the state and exactly one primary action (T012)"
   await waitForTranslation(page, 3);
   await popup.reload();
   await expect(popup.locator("#status")).toContainText("Translated");
-  await expect(popup.locator("#translate")).toHaveText("Show original");
+  await expect(popup.locator("#translate-label")).toHaveText("Show original");
   await expect(popup.locator("#translate")).toBeEnabled();
   expect(await jobStatus(extension, url)).toMatchObject({ state: "completed" });
 });
@@ -88,7 +88,7 @@ test("without a provider the panel refuses to act and names the settings page (T
   const { popup } = await openPanelFor();
 
   await expect(popup.locator("#translate")).toBeDisabled();
-  await expect(popup.locator("#translate")).toHaveText("Translate this page");
+  await expect(popup.locator("#translate-label")).toHaveText("Translate this page");
   const reason = popup.locator("#no-provider");
   await expect(reason).toBeVisible();
   await expect(reason).toContainText("Open settings");
@@ -108,7 +108,7 @@ test("a run that fails keeps the action pressable and reports the reason (T013)"
   await expect(popup.locator("#failure")).toBeVisible();
   await expect(popup.locator("#failure")).toContainText("rejected the credential");
   // The condition explains the run; it never becomes the only thing to press.
-  await expect(popup.locator("#translate")).toHaveText("Show original");
+  await expect(popup.locator("#translate-label")).toHaveText("Show original");
   await expect(popup.locator("#translate")).toBeEnabled();
 });
 
@@ -137,7 +137,7 @@ test("a volume cap is its own line, with the count it held back (T013)", async (
 
   await expect(popup.locator("#cap")).toBeVisible();
   await expect(popup.locator("#cap")).toContainText("Volume cap reached");
-  await expect(popup.locator("#translate")).toHaveText("Show original");
+  await expect(popup.locator("#translate-label")).toHaveText("Show original");
 });
 
 test("a rule pointing at a missing provider is reported without stopping translation (T013)", async () => {
@@ -158,7 +158,7 @@ test("a rule pointing at a missing provider is reported without stopping transla
 
   await expect(popup.locator("#broken-rule")).toBeVisible();
   await expect(popup.locator("#broken-rule")).toContainText("127.0.0.1");
-  await expect(popup.locator("#translate")).toHaveText("Show original");
+  await expect(popup.locator("#translate-label")).toHaveText("Show original");
 });
 
 test("the idle panel states the session record not at all (T013)", async () => {
