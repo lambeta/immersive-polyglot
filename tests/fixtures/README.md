@@ -1,6 +1,6 @@
 # Reference page fixtures
 
-**Status**: authored for this repository. Not captured from live sites.
+**Status**: mostly authored for this repository; the one captured page is named as such below.
 
 `plan.md` asks for twenty public pages across news, documentation, forum, wiki and blog forms,
 frozen for the release. Downloading live pages verbatim is not reproducible: the pages change,
@@ -37,6 +37,12 @@ URL, the capture date and the reason for the substitution in this file.
 | article-hidden.html | Article | Hidden and `hidden`-attribute blocks mixed with visible prose |
 | article-abstract.html | Article | Authored: a ~900-character abstract and two long body paragraphs; split-block completeness (SC-001, SC-004, SC-007) |
 | article-tests-as-data.html | Article | Captured front matter of the reported page; SC-001 regression (see below) |
+| article-eval-driven-development.html | Article + diagram | Captured sequence diagram with its style sheet and labels; feature 010 regression (see below) |
+| diagram-only.html | Drawing-only page | Only an SVG with two eligible phrases and one single token; SC-015 |
+| diagram-late.html | Prose + late drawing | An SVG injected 700 ms after load; FR-008, SC-007 |
+| diagram-opaque.html | Prose + opaque graphics | Canvas, photo, plugin, frame, media, MathML and an inline icon; FR-007, SC-006 |
+| diagram-long-labels.html | Drawing | A short label with a long translation and one that can shrink; FR-010, SC-016 |
+| diagram-large.html | Large drawing | 5,000 elements and 200 phrases, built by the page script; FR-023, SC-014 |
 
 ### Captured page: article-tests-as-data.html
 
@@ -48,6 +54,22 @@ URL, the capture date and the reason for the substitution in this file.
   contents) plus the Introduction heading and its first two paragraphs. Third-party scripts and site
   chrome are removed; the captured text is not edited. Everything outside that region is absent, so
   this fixture is evidence for the abstract only, not for the whole page.
+
+### Captured page: article-eval-driven-development.html
+
+- **URL**: https://deepeval.com/blog/eval-driven-development
+- **Captured**: 2026-11-18
+- **Reason**: the reported defect — the drawing's style sheet and labels were rendered as one prose
+  passage — and the acceptance case for feature 010's SC-001.
+- **Scope of the capture**: the "What is Eval Driven Development?" heading, the introducing paragraph,
+  the rendered sequence diagram's SVG outer HTML (its embedded `<style>` element, its
+  `#mermaid-…-light` id and all 20 `<text>` runs), and the following paragraph. Site chrome and
+  scripts are removed; the diagram is not edited. The page is evidence for this drawing, not for the
+  whole site.
+
+The other five drawing fixtures are **authored**: they exercise a boundary the captured drawing does
+not (opaque graphics, a drawing-only page, a late injection, a translation that does not fit, and a
+large drawing). They are labelled as fixtures and are not evidence that any live site works.
 
 All pages are served over real HTTP by `tests/support/stub-provider.ts` under `/pages/`, so the
 extension meets them exactly as it meets a web page — no `file://` privileges required.

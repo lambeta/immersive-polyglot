@@ -25,6 +25,12 @@ Definitions live once, in `src/content/markers.ts`. The renderer imports them an
 existing imports keep working; the segmenter and the observer import them directly. No module may
 repeat these literals (R4).
 
+Drawing labels are a second writer, added by feature 010. `src/content/label-renderer.ts` writes a
+drawing's own text runs and the fit's `font-size` / RTL `direction` on the label root, always through
+the journal, and **never** writes a `data-ipt` marker inside a drawing. The full rules are in
+[feature 010's label-rendering contract](../../010-preserve-rendered-diagrams/contracts/label-rendering.md).
+The matrix above still holds for every marker.
+
 ## 2. Ownership matrix
 
 | Module | `data-ipt="target"` | `data-ipt="source"` | Other `data-ipt-*` |
@@ -72,6 +78,9 @@ translation per passage), FR-019 (no new strings).
    (research R5).
 4. After restore, no `[data-ipt]`, `data-ipt-*`, `lang`, `dir`, `tabindex` or `style` value the product
    wrote may remain, and the structural `domHash` of the page MUST equal the pre-translation capture.
+5. A drawing label has no marker to audit: its text is journalled as a `text` entry and its inline
+   style as a `style` entry. Replay restores both, and the `domHash` is the proof that no label text
+   or fit style was left behind (feature 010, FR-013).
 
 ## 6. Conformance
 

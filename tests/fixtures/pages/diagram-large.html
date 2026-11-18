@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>A large drawing — feature 010</title>
+<style>body { margin: 0; font: 16px/1.5 system-ui, sans-serif; }</style>
+</head>
+<body>
+  <main>
+    <p>A large drawing with thousands of elements and two hundred phrases.</p>
+    <div id="slot"></div>
+  </main>
+  <script>
+    (function () {
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('id', 'large');
+      svg.setAttribute('width', '640');
+      svg.setAttribute('height', '102000');
+      svg.setAttribute('viewBox', '0 0 640 102000');
+      const style = document.createElementNS(ns, 'style');
+      style.textContent = '#large text { font: 14px system-ui, sans-serif; fill: #222; }';
+      svg.appendChild(style);
+      for (let index = 0; index < 4800; index += 1) {
+        const rect = document.createElementNS(ns, 'rect');
+        rect.setAttribute('x', String(20 + (index % 3) * 200));
+        rect.setAttribute('y', String(index * 20));
+        rect.setAttribute('width', '180');
+        rect.setAttribute('height', '16');
+        rect.setAttribute('fill', index % 2 === 0 ? '#eef4f6' : '#f8fbfc');
+        svg.appendChild(rect);
+      }
+      for (let index = 0; index < 200; index += 1) {
+        const text = document.createElementNS(ns, 'text');
+        text.setAttribute('x', '110');
+        text.setAttribute('y', String(80 + index * 500));
+        text.textContent = 'Label number ' + String(index + 1);
+        svg.appendChild(text);
+      }
+      document.getElementById('slot').appendChild(svg);
+      document.documentElement.setAttribute('data-large-ready', '1');
+    })();
+  </script>
+</body>
+</html>

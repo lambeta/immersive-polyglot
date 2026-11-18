@@ -6,10 +6,9 @@ import { BADGE_MARK } from "../../src/background/status-badge.js";
  * The shipped checked raster, measured pixel by pixel (feature 009 FR-009–FR-014, SC-002, SC-003,
  * SC-013).
  *
- * The final design floats the mark: the tile is drawn at 12.5 of 16 and the badge is centred on its
- * lower-right corner, so part of the mark sits on transparent ground, outside the icon's silhouette,
- * while the whole mark still fits the canvas. The evidence is the rendered raster a real browser
- * decodes — where the pink is, and that the mark exists beyond the tile's edge.
+ * The final design fills the lower-right quadrant of a full-size tile: the icon does not shrink and
+ * the mark does not overhang the canvas. The evidence is the rendered raster a real browser decodes —
+ * where the pink is, that the tick is white, and that the plain icon carries no pink.
  */
 
 interface Raster {
@@ -77,7 +76,6 @@ function pixels(raster: Raster): Pixel[] {
 }
 
 const isPink = (p: Pixel): boolean => p.r >= 200 && p.g >= 100 && p.g <= 210 && p.b >= 140 && p.b <= 230;
-const isInk = (p: Pixel): boolean => p.r <= 60 && p.g <= 110 && p.b <= 70;
 
 function alphaAt(raster: Raster, x: number, y: number): number {
   const size = raster.width;
@@ -85,7 +83,7 @@ function alphaAt(raster: Raster, x: number, y: number): number {
 }
 
 for (const size of [16, 32] as const) {
-  test(`the ${size} px checked raster floats a pink mark past the icon's tile`, async () => {
+  test(`the ${size} px checked raster fills the icon's lower-right corner`, async () => {
     const { plain, checked } = await readPair(size);
     expect(plain.width).toBe(size);
     expect(checked.width).toBe(size);
@@ -112,19 +110,10 @@ for (const size of [16, 32] as const) {
     const white = all.filter((p) => p.a === 255 && p.r >= 235 && p.g >= 235 && p.b >= 235);
     expect(white.length, "the disc carries a white check").toBeGreaterThan(0);
 
-    // The tile is padded (10 of 16), so a pixel just past its top-right corner is transparent in the
-    // checked icon and opaque in the plain one, which fills the canvas.
-    const probeX = Math.min(size - 1, Math.ceil(BADGE_MARK.tileRatio * size) + 1);
-    expect(alphaAt(checked, probeX, 0), "the checked tile is padded").toBe(0);
-    expect(alphaAt(plain, probeX, 0), "the plain mark fills the canvas").toBe(255);
+    // The tile keeps the plain icon's silhouette: the mark fills the corner, it does not overhang.
+    expect(alphaAt(checked, size - 1, 0)).toBe(alphaAt(plain, size - 1, 0));
 
-    // The float itself: the mark is present beyond the tile's edge, on transparent ground.
-    const tileEdge = Math.ceil(BADGE_MARK.tileRatio * size);
-    const beyondTile = all.filter((p) => isPink(p) || isInk(p)).filter((p) => p.x >= tileEdge || p.y >= tileEdge);
-    expect(beyondTile.length, "the mark extends past the tile").toBeGreaterThan(0);
-    expect(beyondTile.some((p) => p.a === 255)).toBe(true);
-
-    // It reaches the canvas corner the tile gave up, and never crosses the canvas.
+    // It reaches the canvas corner, and never crosses the canvas.
     const mark = all.filter((p) => isPink(p)).map((p) => ({ x: p.x, y: p.y }));
     const maxX = Math.max(...mark.map((p) => p.x));
     expect(maxX).toBeLessThanOrEqual(size - 1);

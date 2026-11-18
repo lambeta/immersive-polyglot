@@ -9,6 +9,7 @@
  */
 
 import { MARKER_ATTRIBUTE } from "./markers.js";
+import { graphicRootOf } from "./graphics.js";
 
 export interface PageObserverOptions {
   root: ParentNode;
@@ -71,6 +72,10 @@ export class PageObserver {
       if (record.type === "attributes") {
         const target = record.target as Element;
         if (this.#isOurs(target)) continue;
+        // Feature 010: a fit's font-size/direction write (and any page animation) inside a drawing is
+        // not new content. Only the drawing root itself is reported.
+        const graphic = graphicRootOf(target);
+        if (graphic !== null && graphic !== target) continue;
         if (this.#seen.has(target)) continue;
         this.#queue(target);
         continue;
@@ -81,6 +86,9 @@ export class PageObserver {
         if (IGNORED_TAGS.has(element.tagName)) continue;
         // Our own injection: never a reason to translate again.
         if (this.#isOurs(element) || element.closest(`[${MARKER_ATTRIBUTE}]`)) continue;
+        // A child added inside a drawing is ignored; a new or replaced drawing root is reported.
+        const graphic = graphicRootOf(element);
+        if (graphic !== null && graphic !== element) continue;
         if (this.#seen.has(element)) continue;
         this.#queue(element);
       }

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Long translations — feature 010</title>
+<style>body { font: 16px/1.5 system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }</style>
+</head>
+<body>
+  <main>
+    <p>A short source label with a long target translation must shrink or stay as drawn.</p>
+    <svg id="long" width="360" height="120" viewBox="0 0 360 120">
+      <style>#long text { font: 16px system-ui, sans-serif; fill: #222; }</style>
+      <rect x="10" y="10" width="340" height="100" rx="8" fill="#f4f7f8" stroke="#8aa"></rect>
+      <text x="180" y="55" text-anchor="middle">Short label</text>
+      <text x="180" y="90" text-anchor="middle">Tiny text</text>
+    </svg>
+    <p>A label that fits its drawn footprint is translated at the drawn size.</p>
+  </main>
+</body>
+</html>

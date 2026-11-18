@@ -1,5 +1,11 @@
 import type { SkipReason, TranslationUnit } from "../shared/types.js";
 import { MARKER_ATTRIBUTE, TARGET_MARKER } from "./markers.js";
+import {
+  isGraphicRoot,
+  isLabelPhrase,
+  labelRootsInGraphic,
+  labelText,
+} from "./graphics.js";
 
 /**
  * Block-level segmentation (research R6). The walk produces one translation unit per leaf block,
@@ -11,6 +17,8 @@ import { MARKER_ATTRIBUTE, TARGET_MARKER } from "./markers.js";
 export interface SegmentOptions {
   targetLang: string;
   sourceLang?: string;
+  /** Feature 010: label roots already considered by an earlier collect in the same run. */
+  seenLabels?: WeakSet<Element>;
 }
 
 export interface SegmentDuplicate {
@@ -124,6 +132,7 @@ const SILENT_TAGS = new Set([
   "INPUT",
   "SELECT",
   "OPTION",
+  "MATH",
 ]);
 
 /** FR-009: code is reproduced verbatim, so it is never sent to a provider. */
@@ -448,6 +457,54 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
     }
   };
 
+  const seenLabels = options.seenLabels ?? new WeakSet<Element>();
+
+  /**
+   * Feature 010: harvest the phrases a drawing renders. A root already considered in this run is
+   * skipped: once a label has been translated its text is the target language and must never be
+   * read back as source (research R7).
+   */
+  const harvestGraphic = (graphic: Element): void => {
+    for (const label of labelRootsInGraphic(graphic)) {
+      if (seenLabels.has(label)) continue;
+      seenLabels.add(label);
+      const text = labelText(label);
+      if (!hasLetters(text)) continue;
+      if (!isLabelPhrase(text)) continue;
+      // Short labels can be too ambiguous for the statistical detector. Fall back to the page's own
+      // declared/configured language before calling a label a translation candidate.
+      const detected = detectLanguage(text);
+      const labelLang = detected === "und" ? (configuredSource ?? markupLang) : detected;
+      if (primarySubtag(labelLang) === targetPrimary) {
+        pushSkipped(label, text, "sameLanguage");
+        continue;
+      }
+      pushQueued(label, text, 0);
+    }
+  };
+
+  /** Harvest graphics nested in a leaf that also holds prose, without walking its prose twice. */
+  const harvestGraphicsUnder = (parent: Element): void => {
+    for (const child of readableChildren(parent)) {
+      if (isGraphicRoot(child)) {
+        if (tagOf(child) === "SVG" && skipReasonFor(child) === null) harvestGraphic(child);
+        continue;
+      }
+      if (SILENT_TAGS.has(tagOf(child))) continue;
+      if (skipReasonFor(child) !== null) continue;
+      harvestGraphicsUnder(child);
+    }
+  };
+
+  const hasGraphicDescendant = (element: Element): boolean => {
+    for (const child of readableChildren(element)) {
+      if (isGraphicRoot(child)) return true;
+      if (SILENT_TAGS.has(tagOf(child))) continue;
+      if (hasGraphicDescendant(child)) return true;
+    }
+    return false;
+  };
+
   const stack = initialElements(root);
   while (stack.length > 0) {
     const element = stack.pop() as Element;
@@ -455,6 +512,12 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
     // passage the reader would see skipped (contracts/page-markup-ownership.md §3, FR-005).
     if (isProductOutput(element)) continue;
     const tag = tagOf(element);
+    // A drawing is never a prose passage. A vector drawing is asked for its labels; an opaque one
+    // (canvas, frame, media, math) is left alone and contributes no unit and no skip count.
+    if (isGraphicRoot(element)) {
+      if (tag === "SVG" && skipReasonFor(element) === null) harvestGraphic(element);
+      continue;
+    }
     if (SILENT_TAGS.has(tag)) continue;
 
     const reason = skipReasonFor(element);
@@ -471,9 +534,27 @@ export function segmentPage(root: ParentNode, options: SegmentOptions): SegmentR
       continue;
     }
 
-    // subtreeText skips product output and keeps block boundaries apart; for a leaf candidate it is
-    // exactly the element's own text.
+    // subtreeText skips product output, silent subtrees and drawings; for a leaf candidate it is the
+    // element's own prose.
     const text = subtreeText(element);
+    if (hasGraphicDescendant(element)) {
+      // A leaf can hold prose and a drawing. The prose is a passage; the drawing's labels are
+      // harvested separately. Descending into the prose children would double-queue them, so only
+      // graphics are walked here.
+      if (hasLetters(text)) {
+        if (primarySubtag(detectLanguage(text)) === targetPrimary) {
+          pushSkipped(element, text, "sameLanguage");
+        } else {
+          const chunks = splitForUnits(text);
+          for (let partIndex = 0; partIndex < chunks.length; partIndex += 1) {
+            const chunk = chunks[partIndex];
+            if (chunk !== undefined) pushQueued(element, chunk, partIndex);
+          }
+        }
+      }
+      harvestGraphicsUnder(element);
+      continue;
+    }
     if (!hasLetters(text)) {
       pushSkipped(element, text, "empty");
       continue;
@@ -614,6 +695,9 @@ function tagOf(element: Element): string {
 
 function hasBlockDescendant(element: Element): boolean {
   for (const child of readableChildren(element)) {
+    // A drawing's internals are not page structure; a <div> inside a <foreignObject> must not turn
+    // its wrapper into a container that loses the wrapper's own prose (feature 010).
+    if (isGraphicRoot(child) || SILENT_TAGS.has(tagOf(child))) continue;
     if (BLOCK_TAGS.has(tagOf(child))) return true;
     if (hasBlockDescendant(child)) return true;
   }
@@ -676,6 +760,9 @@ function subtreeText(element: Element): string {
     if (node.nodeType !== 1) return;
     const child = node as Element;
     if (isProductOutput(child)) return;
+    // A drawing's style sheet, scripts, metadata and geometry are never prose (FR-002). This is the
+    // guard that keeps the reported page's `#mermaid-…{font-family…}` line out of the passage.
+    if (isGraphicRoot(child) || SILENT_TAGS.has(tagOf(child))) return;
     const isBlock = BLOCK_TAGS.has(tagOf(child));
     if (isBlock) out += " ";
     for (let inner = child.firstChild; inner !== null; inner = inner.nextSibling) visit(inner);

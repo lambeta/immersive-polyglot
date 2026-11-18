@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>A late drawing — feature 010</title>
+<style>body { font: 16px/1.5 system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }</style>
+</head>
+<body>
+  <main>
+    <p>The paragraph before the drawing is translated normally.</p>
+    <div id="slot"></div>
+    <p>The paragraph after the drawing is translated normally.</p>
+  </main>
+  <script>
+    setTimeout(function () {
+      const ns = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('id', 'late');
+      svg.setAttribute('width', '420');
+      svg.setAttribute('height', '120');
+      svg.setAttribute('viewBox', '0 0 420 120');
+      const style = document.createElementNS(ns, 'style');
+      style.textContent = '#late text { font: 16px system-ui, sans-serif; fill: #222; }';
+      svg.appendChild(style);
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', '10'); rect.setAttribute('y', '10');
+      rect.setAttribute('width', '400'); rect.setAttribute('height', '100');
+      rect.setAttribute('rx', '8'); rect.setAttribute('fill', '#eef4f6'); rect.setAttribute('stroke', '#8aa');
+      svg.appendChild(rect);
+      const text = document.createElementNS(ns, 'text');
+      text.setAttribute('x', '210'); text.setAttribute('y', '60'); text.setAttribute('text-anchor', 'middle');
+      text.textContent = 'Generate outputs for test cases';
+      svg.appendChild(text);
+      const actor = document.createElementNS(ns, 'text');
+      actor.setAttribute('x', '210'); actor.setAttribute('y', '95'); actor.setAttribute('text-anchor', 'middle');
+      actor.textContent = 'Agent';
+      svg.appendChild(actor);
+      document.getElementById('slot').appendChild(svg);
+    }, 700);
+  </script>
+</body>
+</html>

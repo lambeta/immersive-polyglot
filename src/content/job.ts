@@ -2,8 +2,10 @@ import { planBatches } from "./batcher.js";
 import { PassageIndex, type Passage } from "./passage-index.js";
 import { segmentPage } from "./segmenter.js";
 import { Renderer } from "./renderer.js";
+import { graphicRootOf, isGraphicLabel } from "./graphics.js";
 import { Journal, restorePage } from "./restorer.js";
 import type { PageObserver } from "./observer.js";
+import type { LabelMeasure } from "./label-renderer.js";
 import type { VolumeBudget, RequestLimiter } from "./limiter.js";
 import { classifyTier, estimateSpend } from "../shared/pricing.js";
 import type {
@@ -74,6 +76,8 @@ export interface JobOptions {
   beforeMutation?(): void;
   afterMutation?(): void;
   view?: Window | null;
+  /** Feature 010: jsdom has no getBBox; the label fit takes an explicit measurement in tests. */
+  measureLabel?: LabelMeasure;
 }
 
 export interface JobResult {
@@ -108,6 +112,8 @@ export class TranslationJob {
   /** Block ↔ parts ↔ repeated occurrences, shared with the demand pump (feature 007). */
   readonly #passages = new PassageIndex();
   readonly #byId = new Map<string, TranslationUnit>();
+  /** Feature 010: label roots already considered by this run; a translated label is never re-read. */
+  readonly #seenLabels = new WeakSet<Element>();
   #batchSeq = 0;
   readonly #controllers = new Map<string, AbortController>();
   #state: JobState = "idle";
@@ -147,6 +153,7 @@ export class TranslationJob {
       ...(options.typography ? { typography: options.typography } : {}),
       targetLang: options.targetLang,
       view: options.view ?? null,
+      ...(options.measureLabel ? { measureLabel: options.measureLabel } : {}),
       ...(options.beforeMutation ? { beforeMutation: options.beforeMutation } : {}),
       ...(options.afterMutation ? { afterMutation: options.afterMutation } : {}),
     });
@@ -188,9 +195,14 @@ export class TranslationJob {
 
   /** Segment the page once; the same call also services late content. */
   collect(root: ParentNode = this.#options.root ?? this.#options.document.body): number {
-    const result = segmentPage(root, {
+    // A root inside a drawing is never a passage root: segment the drawing, which harvests only its
+    // unseen labels (feature 010, R7).
+    const element = root.nodeType === 1 ? (root as Element) : null;
+    const target = element === null ? root : (graphicRootOf(element) ?? root);
+    const result = segmentPage(target, {
       targetLang: this.#options.targetLang,
       ...(this.#options.sourceLang === "auto" ? {} : { sourceLang: this.#options.sourceLang }),
+      seenLabels: this.#seenLabels,
     });
     this.#sourceLang = result.sourceLang;
 
@@ -405,6 +417,7 @@ export class TranslationJob {
    */
   markPassages(elements: readonly Element[]): void {
     for (const element of elements) {
+      if (isGraphicLabel(element)) continue;
       const unit = this.#passages.partsOf(element)[0];
       if (unit) this.#renderer.showPending(element, unit.id);
     }
@@ -414,12 +427,25 @@ export class TranslationJob {
   #showPending(unit: TranslationUnit): void {
     const element = unit.domRef;
     if (!element || !element.isConnected) return;
+    // A label changes in place; a rotation or placeholder inside a drawing would be a second,
+    // page-visible mutation and is forbidden (FR-012).
+    if (isGraphicLabel(element)) return;
     this.#renderer.showPending(element, unit.id);
   }
 
   #render(unit: TranslationUnit): void {
     const element = unit.domRef;
     if (!element || !element.isConnected) return;
+    if (isGraphicLabel(element)) {
+      if (unit.state === "translated" && unit.translatedText) {
+        this.#renderer.renderLabel(
+          { id: unit.id, targetLang: unit.targetLang },
+          unit.translatedText,
+          element,
+        );
+      }
+      return;
+    }
     this.#renderBlock(element);
   }
 
@@ -496,6 +522,14 @@ export class TranslationJob {
         .filter((part) => part.length > 0)
         .join(" ");
       if (text.length === 0) continue;
+      if (isGraphicLabel(element)) {
+        this.#renderer.renderLabel(
+          { id: blockId, targetLang: contributing[0]?.targetLang },
+          text,
+          element,
+        );
+        continue;
+      }
       this.#renderer.renderUnit(
         { id: blockId, targetLang: contributing[0]?.targetLang },
         text,

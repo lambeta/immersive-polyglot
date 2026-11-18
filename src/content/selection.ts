@@ -3,6 +3,8 @@
  * restorer rather than introducing a second rendering path.
  */
 
+import { graphicRootOf } from "./graphics.js";
+
 const BLOCK_SELECTOR = [
   "p",
   "h1",
@@ -43,6 +45,11 @@ export function selectedBlocks(doc: Document): Element[] {
   const selection = doc.getSelection();
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) return [];
   const range = selection.getRangeAt(0);
+  // Feature 010: a selection inside a drawing targets the drawing, not the wrapper's prose.
+  const startGraphic = graphicRootOf(range.startContainer);
+  const endGraphic = graphicRootOf(range.endContainer);
+  if (startGraphic !== null && startGraphic === endGraphic) return [startGraphic];
+
   const start = closestBlock(range.startContainer);
   const end = closestBlock(range.endContainer);
   if (!start || !end) return [];
@@ -68,6 +75,8 @@ export function blockFromPoint(doc: Document, x: number, y: number): Element | n
   const hit = doc.elementFromPoint(x, y);
   if (!hit) return null;
   if ((hit as Element).closest("[data-ipt]")) return null;
+  const graphic = graphicRootOf(hit);
+  if (graphic !== null) return graphic;
   return closestBlock(hit);
 }
 

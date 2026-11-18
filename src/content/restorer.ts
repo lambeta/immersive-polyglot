@@ -9,13 +9,17 @@
 export type JournalEntry =
   | { kind: "insert"; node: Node; parent: Node; next: Node | null }
   | { kind: "attribute"; element: Element; name: string; previous: string | null }
-  | { kind: "style"; element: HTMLElement; previous: string | null };
+  | { kind: "style"; element: Element; previous: string | null }
+  | { kind: "text"; node: CharacterData; previous: string };
 
 export class Journal {
   readonly #entries: JournalEntry[] = [];
   /** The style attribute is journalled whole, once per element: property-level undo leaves an
    * empty style="" behind, which is visible residue to a hash comparison (FR-019). */
   readonly #styled = new Set<Element>();
+  /** Text runs whose original value is already recorded, so re-rendering a label cannot grow the
+   * journal or lose the source text. */
+  #texts = new WeakSet<CharacterData>();
   /** Attributes whose original value is already recorded, so repeated writes (style switching)
    * do not grow the journal (FR-016). */
   #attributes = new WeakMap<Element, Set<string>>();
@@ -50,7 +54,7 @@ export class Journal {
     this.recordAttribute(element, name);
   }
 
-  recordStyle(element: HTMLElement): void {
+  recordStyle(element: Element): void {
     if (this.#styled.has(element)) return;
     this.#styled.add(element);
     this.#entries.push({
@@ -60,8 +64,20 @@ export class Journal {
     });
   }
 
+  /** A label's text run is page-owned; record its value once, before the first write. */
+  recordText(node: CharacterData): void {
+    if (this.#texts.has(node)) return;
+    this.#texts.add(node);
+    this.#entries.push({
+      kind: "text",
+      node,
+      previous: node.nodeValue ?? "",
+    });
+  }
+
   clear(): void {
     this.#entries.length = 0;
+    this.#texts = new WeakSet<CharacterData>();
     this.#attributes = new WeakMap<Element, Set<string>>();
   }
 
@@ -78,6 +94,8 @@ export class Journal {
       } else if (entry.kind === "attribute") {
         if (entry.previous === null) entry.element.removeAttribute(entry.name);
         else entry.element.setAttribute(entry.name, entry.previous);
+      } else if (entry.kind === "text") {
+        entry.node.nodeValue = entry.previous;
       } else if (entry.previous === null) {
         entry.element.removeAttribute("style");
       } else {
@@ -86,6 +104,7 @@ export class Journal {
     }
     this.#entries.length = 0;
     this.#styled.clear();
+    this.#texts = new WeakSet<CharacterData>();
     this.#attributes = new WeakMap<Element, Set<string>>();
     return replayed;
   }

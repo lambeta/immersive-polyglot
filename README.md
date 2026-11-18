@@ -14,6 +14,11 @@ travels only to the endpoint you configure; page text travels only there too.
   fills the fields, the credential is still yours to enter, and any endpoint works.
 - **Bilingual reading.** Each paragraph gets its translation as an adjacent block, with the display
   mode you choose (translation below, above, or instead of the original).
+- **A drawing keeps its drawing, and its phrases read in your language.** A generated diagram's
+  shapes, arrows and positions stay exactly where the page drew them; the phrases inside it are
+  translated in place, at their own position. Single-token names and diagram keywords, opaque graphics
+  (a chart, a photo, an embedded frame, media, an equation) and the drawing's own style sheet stay as
+  drawn and are never sent to the provider.
 - **Progressive, on demand.** Translation is requested for the passages you are about to read — the
   screen in front of you plus one screenful — instead of the whole page. Each such passage wears a
   small rotating mark in the exact slot its translation will take, and that mark becomes the
@@ -144,6 +149,8 @@ src/
 │   ├── segmenter.ts         readable-content extraction, stable ids, dedupe, language detect
 │   ├── batcher.ts           token-budget packing with a stable unit-to-index mapping
 │   ├── renderer.ts          Immersive-Translate-style placement, modes, typography inheritance
+│   ├── graphics.ts          graphic roots, label runs, the phrase rule
+│   ├── label-renderer.ts    in-place label write, measure, shrink-to-floor
 │   ├── restorer.ts          the write journal, inverse replay, DOM hash
 │   ├── observer.ts          late content, debounced, idempotent, loop-proof
 │   ├── limiter.ts           concurrency ceiling, volume budget, cancellation signal

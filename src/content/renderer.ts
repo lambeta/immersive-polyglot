@@ -1,4 +1,5 @@
 import { Journal } from "./restorer.js";
+import { renderLabel as renderLabelInto, type LabelMeasure } from "./label-renderer.js";
 import { isRtlLanguage } from "../shared/direction.js";
 import { displayStyleById, resolveDisplayStyle } from "../shared/display-styles.js";
 import { sanitiseTypography } from "../shared/settings.js";
@@ -74,6 +75,8 @@ export interface RenderOptions {
   typography?: TranslationTypography;
   /** Injected for tests; defaults to the element's own window. */
   view?: Window | null;
+  /** Feature 010: jsdom has no getBBox; the label fit takes an explicit measurement in tests. */
+  measureLabel?: LabelMeasure;
   /**
    * Feature 007 FR-027: called immediately before and after a mutation that can change the page's
    * height. The pair runs inside one synchronous task, so the reader cannot scroll between them —
@@ -94,6 +97,7 @@ export class Renderer {
   readonly #pending = new Map<Element, PendingRecord>();
   readonly #beforeMutation: (() => void) | undefined;
   readonly #afterMutation: (() => void) | undefined;
+  readonly #measureLabel: LabelMeasure | undefined;
 
   constructor(journal: Journal, options: RenderOptions) {
     this.#journal = journal;
@@ -104,6 +108,7 @@ export class Renderer {
     this.#typography = sanitiseTypography(options.typography ?? {});
     this.#beforeMutation = options.beforeMutation;
     this.#afterMutation = options.afterMutation;
+    this.#measureLabel = options.measureLabel;
   }
 
   get displayStyle(): DisplayStyleId {
@@ -238,6 +243,18 @@ export class Renderer {
     }
     // A mark is placed by the same rule as a translation, so a mode switch has to move it too.
     for (const pending of this.#pending.values()) this.#place(pending.container, pending.source);
+  }
+
+  /**
+   * Feature 010: a label is written where it is drawn. It never becomes a sibling container and is
+   * never hidden by a display mode; the block path above is untouched.
+   */
+  renderLabel(unit: { id: string; targetLang?: string }, text: string, source: Element): boolean {
+    return renderLabelInto(this.#journal, source, text, {
+      targetLang: unit.targetLang ?? this.#targetLang,
+      ...(this.#measureLabel ? { measure: this.#measureLabel } : {}),
+      view: this.#view,
+    }).applied;
   }
 
   /** FR-020: only a real translation may be rendered, and only as text. */

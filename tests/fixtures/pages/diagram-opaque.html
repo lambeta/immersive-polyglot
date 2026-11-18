@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>Opaque graphics — feature 010</title>
+<style>body { font: 16px/1.5 system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }</style>
+</head>
+<body>
+  <main>
+    <p>Opaque graphics around readable prose must stay exactly as drawn.</p>
+    <h2>A chart painted on a canvas</h2>
+    <canvas id="chart" width="320" height="120"><p>Canvas fallback text</p></canvas>
+    <h2>A photograph</h2>
+    <img id="photo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" width="80" height="80" alt="A photograph of a harbour" />
+    <h2>A plugin object</h2>
+    <object id="plugin" data="about:blank" width="120" height="40"><p>Plugin fallback text</p></object>
+    <h2>An embedded frame</h2>
+    <iframe id="frame" srcdoc="<p>Embedded prose that must not be translated</p>" width="260" height="60"></iframe>
+    <h2>A media player</h2>
+    <video id="media" width="200" height="60">Media fallback text</video>
+    <h2>A typeset equation</h2>
+    <math id="equation"><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow></math>
+    <h2>An icon inside a sentence</h2>
+    <p>Read this <svg id="icon" width="12" height="12" viewBox="0 0 12 12"><title>Warning</title><circle cx="6" cy="6" r="5" fill="#c33"></circle></svg> sentence.</p>
+    <p>The prose above and below the graphics still belongs to the reader.</p>
+  </main>
+</body>
+</html>
