@@ -1,0 +1,15 @@
+# One row: the plugin's entry in the profile. The config here is the documented default; the
+# reader's own values live in their profile patch layer and survive upgrades.
+- insert:
+    - id: immersive-polyglot
+      name: immersive-polyglot-dsh
+      config:
+        route: dsh
+        endpoint: https://api.deepseek.com/chat/completions
+        model: deepseek-chat
+        targetLang: zh
+        glossary: []
+        maxAnswersPerPage: 12
+        maxCharsPerBatch: 6000
+        timeoutMs: 60000
+        maxRetries: 2

@@ -21,13 +21,15 @@ describe("system instruction", () => {
     expect(languageName("pt-BR")).toBe("pt-BR");
   });
 
-  it("carries all six obligations", () => {
+  it("carries the obligations, including Markdown preservation", () => {
     const instruction = buildSystemInstruction(base);
     expect(instruction).toMatch(/order and the count exactly/i);
     expect(instruction).toMatch(/code, URLs, identifiers, placeholders and numbers/i);
     expect(instruction).toMatch(/leading and trailing whitespace/i);
     expect(instruction).toMatch(/Do not add explanations/i);
     expect(instruction).toMatch(/JSON array/i);
+    expect(instruction).toMatch(/Keep the segment's Markdown as Markdown/i);
+    expect(instruction).toMatch(/\*\*bold\*\*/);
   });
 
   it("includes every glossary pair, with its case rule", () => {

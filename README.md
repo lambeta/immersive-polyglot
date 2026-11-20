@@ -133,6 +133,91 @@ installed; without it the script exits 2 and SC-011 cannot be judged. The synthe
 npm run verify:rendering -- --include-example
 ```
 
+## DSH plugin (feature 011)
+
+The plugin half of the product, described by [specs/011-dsh-plugin](specs/011-dsh-plugin/), runs
+inside DeepSeek Harness instead of a browser. `plugin/` is its build output; `src/plugin/` is the
+source, split into a Host half (routes, session log, provider call, durable records) and a Client
+half (React surfaces rendered into DSH's slots).
+
+```bash
+npm run build:plugin    # plugin/lib/index.js (Host) and plugin/lib/client.js (Client)
+npm run check:plugin    # typecheck, tests, build and the Client JSX guard
+```
+
+Install it with **DSH → Plugins → Add plugin**, choosing this repository's `plugin/` directory (the
+same thing `plugin_manager install_bundle` does; it links the directory, so a rebuild is enough).
+Then toggle it off and on, or restart DSH, so the new bundle is loaded.
+
+Two surfaces appear once a conversation is open:
+
+- a **control in the session header** — one click turns translation on and sends the page; clicking
+  again turns it off and the translations leave the transcript (they stay stored, so turning it back
+  on paints them again without a provider call);
+- a **translation section under each answer**, labelled with the answer it belongs to.
+
+### How a translated answer is drawn
+
+A section's text is Markdown, so the Client renders it as Markdown rather than as one grey
+paragraph ([markdown.tsx](src/plugin/client/markdown.tsx)): headings, bullet and numbered lists,
+quotes, rules, fenced code verbatim, and inline code, bold, italic, strike-through and links. Two
+limits are deliberate: a pipe table inside one section still reads as a paragraph, and a
+repository-relative link shows as a labelled path instead of a clickable anchor, because opening
+files belongs to the shell, not to this plugin (the turn tail's `openFile` is the hook to wire up).
+Markdown markers survive because the Host translates block-shaped text and keeps the provider's
+answer as returned, so turning the control off and on replays stored sections without a second
+provider call.
+
+### Where the translations come from
+
+`route: "dsh"` (the default) sends each page through **DSH's own model services** — the provider and
+model already selected in DSH, with DSH's credential. Nothing else needs configuring: if DSH can
+answer in this conversation, the plugin can translate it. The record names that provenance as
+`endpointHost: "dsh:<provider>"`.
+
+`route: "own"` keeps the older behaviour: the plugin calls `endpoint` itself and spends the
+credential below. Choose it to translate with a cheaper or different model than the one answering,
+or when the reader's DSH has no model selected.
+
+```yaml
+# ~/.dsh/profiles/<profile>/cordis.patch.yml, in the plugin's patch row
+- id: immersive-polyglot
+  config:
+    route: own
+    endpoint: https://api.deepseek.com/chat/completions
+    model: deepseek-chat
+    glossary:
+      - sourceTerm: KV cache
+        targetTerm: KV 缓存
+```
+
+For `route: own`, the credential is stored in DSH's own secret store, never in the profile patch,
+and the GUI never sees it. Until the settings surface (US2) lands, set it once over the plugin's own
+route:
+
+```bash
+PORT=50386   # the port of the DSH page you are using
+curl -X PUT "http://127.0.0.1:$PORT/immersive-polyglot/api/credential" \
+  -H 'x-immersive-polyglot: 1' -H 'content-type: application/json' \
+  -H "Origin: http://127.0.0.1:$PORT" \
+  -d '{"value":"sk-..."}'
+```
+
+`GET` returns `{ "configured": true, "writable": true, "masked": "sk-…" }`, `DELETE` unsets it.
+Records live under `~/.dsh/storages/immersive_polyglot/translations/`, so a restart keeps them.
+
+Known limits of this increment, recorded rather than hidden:
+
+1. A page is the **last `maxAnswersPerPage` finished answers**, not the viewport-visible ones —
+   viewport-following (FR-012) needs the shell's own scrolling anchors.
+2. Translations render as **Markdown** (headings, lists, quotes, fenced code verbatim, inline
+   code, bold/italic, links), but a pipe table inside one section is still shown as a paragraph, and
+   a relative-path link is shown as a label instead of being clickable (FR-019).
+3. There is no settings surface yet (US2): `route`, endpoint, model and glossary are changed only
+   through the plugin's `Config` patch.
+4. The `dsh` route does not retry: DSH's adapters own their retry policy, and a page that fails
+   reports the failure class instead of spending more of the reader's quota.
+
 ## Architecture
 
 ```text

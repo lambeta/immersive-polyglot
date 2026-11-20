@@ -1,7 +1,7 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (none - unratified template scaffold) -> 1.0.0 -> 1.0.1
+Version change: (none - unratified template scaffold) -> 1.0.0 -> 1.0.1 -> 1.0.2
 Bump rationale: Initial ratification. The file previously contained only the unmodified
 constitution template with every placeholder unfilled, so no prior governance exists to
 compare against. First adopted version is therefore 1.0.0 (initial adoption, not a breaking
@@ -32,6 +32,15 @@ Amendment 1 (2026-11-13, v1.0.0 -> v1.0.1):
   - Scope: filled the one blank slot left by initial ratification; no principle was added,
     removed, or redefined.
   - Bump type: PATCH (recording a decision the section already required, no new obligation).
+
+Amendment 2 (2026-11-19, v1.0.1 -> v1.0.2):
+  - Scope: extended "Technology and Environment Constraints" with the second ship target ratified
+    by spec 011 — the same checkout also builds a DeepSeek Harness plugin — and with the toolchain
+    that target needs: the DSH SDK packages as pinned, dev-only type dependencies resolved at
+    runtime from the DSH installation itself, React 18 taken from DSH's browser module table, and
+    Vite 5 compiling both bundles. No principle was added, removed, or redefined.
+  - Bump type: PATCH, as this section itself prescribes for a stack change. The extension's stack,
+    its zero runtime dependencies, and every principle remain exactly as ratified.
 
 Provenance note: the file was drafted from the project name and directory context only.
 Principles I-IV are stack-neutral process commitments; principle V follows from a
@@ -162,6 +171,13 @@ amendment replaces it.
   lockfile and recorded in the project README.
 - Changing any element of that stack REQUIRES a PATCH amendment to this section before the
   change lands, so that the recorded stack never drifts from the one in use.
+- The same checkout also builds a second, optional ship target: a DeepSeek Harness plugin, added by
+  spec 011. Its stack is the same TypeScript 5.6 and the same Vite 5; the DSH SDK packages are
+  pinned dev-only type dependencies that resolve at runtime from the DSH installation, React 18
+  comes from DSH's browser module table, and neither half of the plugin declares a runtime
+  dependency of its own. The plugin is additive: the extension's stack, its output and its zero
+  runtime dependencies are unchanged, and the extension MUST build and pass its suites with the
+  plugin absent.
 - A fresh checkout MUST become runnable, including its full test suite, through one
   documented command per package, with no undocumented manual steps.
 - Secrets and credentials MUST NOT be committed. They MUST be supplied through environment
@@ -225,5 +241,8 @@ the other guidance MUST be corrected.
   environment constraints, development workflow and quality gates, governance.
 - 2026-11-13 - v1.0.1 - PATCH: recorded the ratified toolchain in "Technology and Environment
   Constraints", resolving TODO(TECH_STACK). No principle changed.
+- 2026-11-19 - v1.0.2 - PATCH: ratified the DeepSeek Harness plugin as a second ship target from the
+  same checkout (spec 011), with its pinned dev-only SDK dependencies and the unchanged extension
+  guarantees. No principle changed.
 
-**Version**: 1.0.1 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-13
+**Version**: 1.0.2 | **Ratified**: 2026-11-13 | **Last Amended**: 2026-11-19

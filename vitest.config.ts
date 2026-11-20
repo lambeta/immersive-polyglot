@@ -6,8 +6,9 @@ import { defineConfig } from "vitest/config";
  * a DOM cannot silently run without one.
  */
 export default defineConfig({
+  esbuild: { jsx: "automatic" },
   test: {
-    include: ["tests/unit/**/*.test.ts", "tests/dom/**/*.test.ts"],
+    include: ["tests/unit/**/*.test.ts", "tests/dom/**/*.test.ts", "tests/dom/**/*.test.tsx"],
     environmentMatchGlobs: [
       ["tests/dom/**", "jsdom"],
       ["tests/unit/**", "node"],

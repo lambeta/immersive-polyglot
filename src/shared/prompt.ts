@@ -59,12 +59,13 @@ export function buildSystemInstruction(input: PromptInput): string {
   lines.push("3. Keep code, URLs, identifiers, placeholders and numbers unchanged, character for character.");
   lines.push("4. Preserve leading and trailing whitespace. Never merge or split segments.");
   lines.push("5. Do not add explanations, headings, notes or alternatives.");
+  lines.push("6. Keep the segment's Markdown as Markdown: leading #, - and >, list numbering, **bold**, *italic*, `code` and [links](…) stay markers; translate only the words around them.");
 
   const glossary = input.glossary.filter(
     (entry) => entry.sourceTerm.trim().length > 0 && entry.targetTerm.trim().length > 0,
   );
   if (glossary.length > 0) {
-    lines.push("6. Use these required term translations whenever the term appears in a segment:");
+    lines.push("7. Use these required term translations whenever the term appears in a segment:");
     for (const entry of glossary) {
       const sensitivity = entry.caseSensitive ? "case-sensitive" : "case-insensitive";
       lines.push(
@@ -75,7 +76,7 @@ export function buildSystemInstruction(input: PromptInput): string {
 
   const style = (input.style ?? "").trim();
   if (style.length > 0) {
-    lines.push(`${glossary.length > 0 ? 7 : 6}. Style instruction from the reader, applied to every segment: ${style}`);
+    lines.push(`${glossary.length > 0 ? 8 : 7}. Style instruction from the reader, applied to every segment: ${style}`);
   }
 
   lines.push("");

@@ -27,3 +27,4 @@ Thumbs.db
 
 # Playwright browsers installed inside the workspace (the default cache is not writable here)
 .playwright-browsers/
+plugin/lib/
