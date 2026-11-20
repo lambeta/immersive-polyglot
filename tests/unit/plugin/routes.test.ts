@@ -4,6 +4,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import { registerRoutes, type RouteDeps } from "../../../src/plugin/host/routes.js";
 import type { RecordStore } from "../../../src/plugin/host/records.js";
 import type { DshLlm, DshModelRoute } from "../../../src/plugin/host/dsh-route.js";
+import manifest from "../../../plugin/package.json";
 
 /**
  * The HTTP surface is the only thing the Client half calls, so these tests drive it the way the
@@ -145,7 +146,7 @@ function harness(options: {
 describe("the plugin's HTTP surface", () => {
   it("answers health with its version", async () => {
     const { call } = harness();
-    expect(await call({ method: "GET", path: "health" })).toEqual({ status: 200, body: { ok: true, version: "0.1.0" } });
+    expect(await call({ method: "GET", path: "health" })).toEqual({ status: 200, body: { ok: true, version: manifest.version } });
   });
 
   it("refuses a request from another origin and one without the marker header", async () => {

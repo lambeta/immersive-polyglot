@@ -9,6 +9,9 @@ import { planPage, type PageLimits, type PagePlan } from "./page-batch.js";
 import { listSession, readCurrent, saveRecord, sectionsOf, type RecordStore, type TranslationRecord } from "./records.js";
 import { translatePage, type PageTranslation } from "./translate.js";
 import { translateWithDsh, type DshRoute } from "./dsh-route.js";
+// The shipped manifest is the one authority on the plugin's version; inlining it at build time keeps
+// `/api/health` honest across releases instead of pinning a number in the source.
+import manifest from "../../../plugin/package.json";
 
 /**
  * The plugin's only Client-facing surface: same-origin JSON routes on DSH's web server. The
@@ -232,7 +235,7 @@ export function registerRoutes(ctx: Context, deps: RouteDeps): () => void {
       const url = new URL(req.url ?? "/", "http://localhost");
       const route = url.pathname.slice(PREFIX.length + "/api/".length);
       try {
-        if (req.method === "GET" && route === "health") { json(res, 200, { ok: true, version: "0.1.0" }); return; }
+        if (req.method === "GET" && route === "health") { json(res, 200, { ok: true, version: manifest.version }); return; }
         if (req.method === "GET" && route === "state") {
           const sessionId = url.searchParams.get("sessionId") ?? "";
           const records = await listSession(deps.records, sessionId);
